@@ -101,9 +101,8 @@ local function MakeMultiMenuButton(parent, width, getValues, isSelected, onToggl
         end
         local menu = {}
         for _, item in ipairs(getValues()) do
-            menu[#menu + 1] = {
+            local entry = {
                 text = item.label,
-                icon = "Interface\\Icons\\" .. item.icon,
                 checked = isSelected(item.id),
                 isNotRadio = true,
                 keepShownOnClick = true,
@@ -112,6 +111,10 @@ local function MakeMultiMenuButton(parent, width, getValues, isSelected, onToggl
                     self:Refresh()
                 end,
             }
+            if item.icon then
+                entry.icon = "Interface\\Icons\\" .. item.icon
+            end
+            menu[#menu + 1] = entry
         end
         EasyMenu(menu, menuFrame, self, 0, 0, "MENU")
         activeMultiMenuButton = self

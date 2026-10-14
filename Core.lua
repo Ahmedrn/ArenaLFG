@@ -61,6 +61,7 @@ local defaults = {
         tier = 1, seasonal = false, tenGames = false,
         note = "", targetRole = "Any", targetAny = false, targetSpecs = {}, posted = false,
     },
+    characters = {},
     filters = { role = "Any", team = "Any", seasonal = "Any", tenGames = false },
 }
 
@@ -81,13 +82,35 @@ ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 ev:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON then
         ArenaLFGDB = ArenaLFGDB or {}
+        local legacyMine = ArenaLFGDB.mine
         CopyDefaults(defaults, ArenaLFGDB)
+
+        local realm, player = GetRealmName(), UnitName("player")
+        if not realm or realm == "" or not player or player == "" then
+            ns.Print("Could not load character-specific settings: character or realm name is unavailable.")
+            return
+        end
+
+        ArenaLFGDB.characters[realm] = ArenaLFGDB.characters[realm] or {}
+        local realmCharacters = ArenaLFGDB.characters[realm]
+        if not ArenaLFGDB.characterProfilesMigrated then
+            realmCharacters[player] = realmCharacters[player] or {}
+            if type(legacyMine) == "table" then
+                realmCharacters[player].mine = legacyMine
+            end
+            ArenaLFGDB.characterProfilesMigrated = true
+        end
+        realmCharacters[player] = realmCharacters[player] or {}
+        realmCharacters[player].mine = realmCharacters[player].mine or {}
+        CopyDefaults(defaults.mine, realmCharacters[player].mine)
+
         ns.DB = ArenaLFGDB
+        ns.DB.mine = realmCharacters[player].mine
         ns.DB.mine.roleManual = nil
-        ns.DEBUG = ArenaLFGDB.debug
+        ns.DEBUG = ns.DB.debug
         local okRole = false
-        for _, r in ipairs(ns.ROLES) do if r == ArenaLFGDB.mine.role then okRole = true end end
-        if not okRole then ArenaLFGDB.mine.role = "DPS" end
+        for _, r in ipairs(ns.ROLES) do if r == ns.DB.mine.role then okRole = true end end
+        if not okRole then ns.DB.mine.role = "DPS" end
         ns.BuildMinimapButton()
     elseif event == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
