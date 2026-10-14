@@ -472,6 +472,14 @@ function ns.UI_LoadMine()
     w.char:SetTextColor(c.r, c.g, c.b)
     w.role:Refresh(); w.tier:Refresh()
     w.gs:SetText(m.gs > 0 and m.gs or "")
+    w.gs:EnableMouse(not info.gs)
+    w.gs:EnableKeyboard(not info.gs)
+    if info.gs then
+        w.gs:ClearFocus()
+        w.gs:SetTextColor(0.5, 0.5, 0.5)
+    else
+        w.gs:SetTextColor(1, 1, 1)
+    end
     w.team:SetChecked(m.hasTeam)
     w.rating:SetText(m.hasTeam and ("Rating: " .. m.teamRating) or "")
     w.seasonal:SetChecked(m.seasonal)
@@ -479,7 +487,7 @@ function ns.UI_LoadMine()
     w.note:SetText(m.note or "")
 
     local txt = (info.team and ("2v2 team \"" .. info.team .. "\" found") or "No 2v2 team found on this character")
-        .. (info.gs and "; gearscore read from your GearScore addon." or "; no GearScore addon, enter your GS by hand.")
+        .. (info.gs and "; gearscore read from your GearScore addon." or "; gearscore unavailable, enter your GS by hand.")
     w.detect:SetText((info.team and "|cff00ff00" or "|cff999999") .. txt .. "|r")
 
     w.post:SetText(m.posted and "Update Listing" or "List Group")
@@ -547,6 +555,7 @@ end
 ----------------------------------------------------------------------
 function ns.BuildUI()
     local f = CreateFrame("Frame", "ArenaLFGFrame", UIParent)
+    f:Hide()
     f:SetWidth(780); f:SetHeight(480)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
