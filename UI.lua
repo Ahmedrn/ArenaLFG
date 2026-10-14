@@ -415,7 +415,10 @@ local function BuildFormView(parent, f)
     w.role = MakeMenuButton(p, 120,
         function() return ns.ROLES end,
         function() return m.role end,
-        function(v) m.role = v end)
+        function(v)
+            m.role = v
+            m.roleManual = true
+        end)
     w.role:SetPoint("TOPLEFT", 100, -58)
 
     MakeLabel(p, "Gearscore", 12, -92)

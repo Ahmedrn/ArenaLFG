@@ -4,16 +4,45 @@ function ns.GetMyClass()
     return select(2, UnitClass("player")) -- token, e.g. "HUNTER"
 end
 
--- Spec = talent tree with the most points
-function ns.GetMySpec()
+local ROLE_BY_TALENT_TAB = {
+    WARRIOR = { "DPS", "DPS", "Tank" },
+    PALADIN = { "Healer", "Tank", "DPS" },
+    HUNTER = { "DPS", "DPS", "DPS" },
+    ROGUE = { "DPS", "DPS", "DPS" },
+    PRIEST = { "Healer", "Healer", "DPS" },
+    DEATHKNIGHT = { "Tank", "DPS", "DPS" },
+    SHAMAN = { "DPS", "DPS", "Healer" },
+    MAGE = { "DPS", "DPS", "DPS" },
+    WARLOCK = { "DPS", "DPS", "DPS" },
+    DRUID = { "DPS", "DPS", "Healer" },
+}
+
+local function GetPrimaryTalentTab()
     local best, bestPoints = nil, 0
     for i = 1, GetNumTalentTabs() do
-        local name, _, points = GetTalentTabInfo(i)
+        local _, _, points = GetTalentTabInfo(i)
         if points and points > bestPoints then
-            best, bestPoints = name, points
+            best, bestPoints = i, points
         end
     end
-    return best or "None"
+    return best
+end
+
+-- Spec = talent tree with the most points
+function ns.GetMySpec()
+    local tab = GetPrimaryTalentTab()
+    if tab then
+        local name = GetTalentTabInfo(tab)
+        return name or "None"
+    end
+    return "None"
+end
+
+function ns.GetSuggestedRole()
+    local class = ns.GetMyClass()
+    local tab = GetPrimaryTalentTab()
+    local classRoles = ROLE_BY_TALENT_TAB[class]
+    return classRoles and tab and classRoles[tab] or nil
 end
 
 -- Soft dependency: only used if a GearScore addon is installed.
@@ -50,13 +79,21 @@ end
 local f = CreateFrame("Frame")
 f:RegisterEvent("ARENA_TEAM_UPDATE")
 f:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE")
+f:RegisterEvent("PLAYER_TALENT_UPDATE")
+f:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 f:SetScript("OnEvent", function()
-    if ns.frame and ns.frame.mine and ns.frame.mine:IsShown() then ns.SaveMine(); ns.UI_LoadMine() end
+    if ns.frame and ns.frame.mine and ns.frame.mine:IsShown() then
+        ns.SaveMine()
+        ns.UI_LoadMine()
+    end
 end)
 
 -- Pull what the game can tell us. The 2v2 team is authoritative: no team = no team.
 function ns.DetectMine()
     local m, info = ns.DB.mine, {}
+    if not m.roleManual then
+        m.role = ns.GetSuggestedRole() or m.role
+    end
     local gs = ns.GetMyGearScore()
     if gs then m.gs = gs; info.gs = true end
     local tname, rating = ns.GetMy2v2Team()

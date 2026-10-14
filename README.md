@@ -13,7 +13,7 @@ Stop scrolling through global chat: see who is looking for a 2v2 partner, sign u
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **List your group** with role, gearscore, experience tier, a short title and flags (seasonal character, 10 games for arena points).
 - **Auto-detection**: your class, spec, 2v2 team and team rating are read from the game. Gearscore is read from your GearScore addon if you have one.
-- **Roles:** DPS, Healer, Tank.
+- **Roles:** DPS, Healer, Tank. ArenaLFG suggests a role from your class and primary talent tree; you can choose a different role in the listing form.
 - **PvP UI integration:** press **H** or click the **Player vs. Player** micro menu button to open ArenaLFG beside the PvP window. The minimap button and `/alfg` also open it.
 - **Clean chat:** sync traffic is filtered from your chat windows, though the plain-text channel messages are visible to anyone who joins the channel.
 
