@@ -21,7 +21,7 @@ Stop scrolling through global chat: see who is looking for a 2v2 partner, sign u
 
 ## Installation
 
-1. Download `ArenaLFG-vX.Y.zip` from the [Releases page](../../releases) (do **not** use "Download ZIP" on the repository page, it creates a wrongly named folder).
+1. Download `ArenaLFG-v1.1.0.zip` from the [Releases page](../../releases) (do **not** use "Download ZIP" on the repository page, it creates a wrongly named folder).
 2. Extract it into your addons folder so the path looks like:
    ```
    World of Warcraft\Interface\AddOns\ArenaLFG\ArenaLFG.toc
@@ -89,6 +89,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 
 - Early version: expect rough edges. Please report them.
 - Visible listings depend on how many players run the addon.
+- The first player to join the `ArenaLFGSync` custom channel becomes its owner and may set a password or kick other members, which can interrupt synchronization.
 - Gearscore is self-reported (or read from your GearScore addon), so it can be edited by the player.
 - Solo-queue style teams reported by the server are ignored; only real 2v2 teams count.
 
