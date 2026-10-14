@@ -2,18 +2,30 @@ local ADDON, ns = ...
 
 ----------------------------------------------------------------------
 -- Wire format (sent as plain text in the hidden channel):
--- AL1;class;spec;role;gs;hasTeam;teamRating;tier;seasonal;tenGames;note
+-- AL1;class;spec;role;gs;hasTeam;teamRating;tier;seasonal;tenGames;note;targetRole;targetSpecs;specId
 -- ("|" is the chat escape character, so ";" is the separator)
 ----------------------------------------------------------------------
 local SEP = ";"
 local function clean(s) return (tostring(s or ""):gsub("[|;]", "/")) end
 local function b(v) return v and "1" or "0" end
 
+local function EncodeTargetSpecs(l)
+    if l.targetAny then return "ANY" end
+    local ids = {}
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if spec.role == l.targetRole and l.targetSpecs and l.targetSpecs[spec.id] then
+            ids[#ids + 1] = spec.id
+        end
+    end
+    return table.concat(ids, ",")
+end
+
 function ns.Encode(l)
     return table.concat({
         "AL1", l.class, clean(l.spec), clean(l.role), l.gs or 0,
         b(l.hasTeam), l.teamRating or 0, l.tier or 1,
         b(l.seasonal), b(l.tenGames), clean(l.note),
+        l.targetRole or "Any", EncodeTargetSpecs(l), clean(l.specId),
     }, SEP)
 end
 
@@ -24,6 +36,20 @@ function ns.Decode(msg, sender)
     if not RAID_CLASS_COLORS[parts[2]] then return nil end -- reject junk
     local role = "DPS"
     for _, r in ipairs(ns.ROLES) do if r == parts[4] then role = r end end
+    local targetRole = "Any"
+    for _, r in ipairs(ns.PARTNER_ROLES) do
+        if r == parts[12] then targetRole = r end
+    end
+    local targetSpecs = {}
+    local targetAny = targetRole ~= "Any" and parts[13] == "ANY"
+    for id in (parts[13] or ""):gmatch("[^,]+") do
+        for _, spec in ipairs(ns.PARTNER_SPECS) do
+            if spec.id == id and spec.role == targetRole then
+                targetSpecs[id] = true
+                break
+            end
+        end
+    end
     return {
         name       = sender,
         class      = parts[2],
@@ -36,6 +62,10 @@ function ns.Decode(msg, sender)
         seasonal   = parts[9] == "1",
         tenGames   = parts[10] == "1",
         note       = strsub(parts[11], 1, 60),
+        targetRole = targetRole,
+        targetAny = targetAny,
+        targetSpecs = targetSpecs,
+        specId = ns.IsValidSpecId(parts[2], parts[14]) and parts[14] or nil,
     }
 end
 
@@ -47,6 +77,8 @@ function ns.Changed()
 end
 
 function ns.AddListing(l)
+    local previous = ns.listings[l.name]
+    l.listedAt = previous and previous.listedAt or GetTime()
     l.seen = GetTime()
     ns.listings[l.name] = l
     ns.Changed()
@@ -67,6 +99,8 @@ function ns.BuildMine()
         role = m.role, gs = m.gs,
         hasTeam = m.hasTeam, teamRating = m.hasTeam and m.teamRating or 0,
         tier = m.tier, seasonal = m.seasonal, tenGames = m.tenGames, note = m.note,
+        targetRole = m.targetRole, targetAny = m.targetAny, targetSpecs = m.targetSpecs,
+        specId = ns.GetMySpecId(),
     }
 end
 
@@ -109,7 +143,9 @@ function ns.GetSorted()
         if f.seasonal == "Non-seasonal" and l.seasonal then ok = false end
         if f.tenGames and not l.tenGames then ok = false end
         if ok and ns.search and ns.search ~= "" then
-            local hay = strlower(l.name .. " " .. l.spec .. " " .. (l.note or "") .. " " .. l.class)
+            local partnerSpecs = table.concat(ns.GetPartnerSpecNames(l), " ")
+            local hay = strlower(l.name .. " " .. l.spec .. " " .. (l.note or "") .. " "
+                .. l.class .. " " .. partnerSpecs .. " " .. (ns.PartnerPreference(l) or ""))
             if not hay:find(ns.search, 1, true) then ok = false end
         end
         if ok then out[#out + 1] = l end
@@ -127,9 +163,25 @@ end
 ns.appSeq = 0
 
 function ns.ListingTitle(l)
-    if l.note and l.note ~= "" then return l.note end
+    local preference = ns.PartnerPreference(l)
+    if l.note and l.note ~= "" then
+        return preference and (l.note .. " - looking for " .. preference) or l.note
+    end
     local cls = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[l.class]) or l.class
-    return "2v2 " .. l.spec .. " " .. cls .. " looking for a partner"
+    return l.spec .. " " .. cls .. " looking for " .. (preference or "a partner")
+end
+
+function ns.PartnerPreference(l)
+    if l.targetRole and l.targetRole ~= "Any" and l.targetAny then
+        return "any " .. strlower(l.targetRole)
+    end
+    local icons = ns.GetPartnerSpecIcons(l)
+    if #icons == 0 then return nil end
+    local display = {}
+    for _, icon in ipairs(icons) do
+        display[#display + 1] = "|TInterface\\Icons\\" .. icon .. ":14:14|t"
+    end
+    return table.concat(display, " ")
 end
 
 local function Whisper(name, text)

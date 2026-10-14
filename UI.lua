@@ -5,6 +5,16 @@ local APP_H, APP_ROWS = 26, 8
 local CLASS_TEX = "Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes"
 local menuFrame = CreateFrame("Frame", "ArenaLFGMenuFrame", UIParent, "UIDropDownMenuTemplate")
 local UpdateLeft -- forward declaration
+local activeMultiMenuButton
+
+local function IsFocusWithin(frame)
+    local focus = GetMouseFocus()
+    while focus do
+        if focus == frame or focus == DropDownList1 or focus == DropDownList2 then return true end
+        focus = focus:GetParent()
+    end
+    return false
+end
 
 local ROLE_TEXT = {
     DPS    = "|cffff6060DPS|r",
@@ -38,6 +48,26 @@ local function SetClassIcon(tex, class)
     if tc then tex:SetTexCoord(unpack(tc)) end
 end
 
+local function SetSpecIcon(tex, class)
+    local specIcon = ns.GetMySpecIcon()
+    if specIcon then
+        tex:SetTexture("Interface\\Icons\\" .. specIcon)
+        tex:SetTexCoord(0, 1, 0, 1)
+    else
+        SetClassIcon(tex, class)
+    end
+end
+
+local function SetListingSpecIcon(tex, listing)
+    local specIcon = ns.GetSpecIcon(listing.class, listing.specId)
+    if specIcon then
+        tex:SetTexture("Interface\\Icons\\" .. specIcon)
+        tex:SetTexCoord(0, 1, 0, 1)
+    else
+        SetClassIcon(tex, listing.class)
+    end
+end
+
 -- Button that opens a stock dropdown menu; text shows the current value
 local function MakeMenuButton(parent, width, getValues, getText, onPick)
     local btn = CreateFrame("Button", NextName("Menu"), parent, "UIPanelButtonTemplate")
@@ -50,6 +80,54 @@ local function MakeMenuButton(parent, width, getValues, getText, onPick)
                 func = function() onPick(v); self:Refresh() end })
         end
         EasyMenu(menu, menuFrame, self, 0, 0, "MENU")
+    end)
+    btn:Refresh()
+    return btn
+end
+
+local function MakeMultiMenuButton(parent, width, getValues, isSelected, onToggle, getText)
+    local btn = CreateFrame("Button", NextName("MultiMenu"), parent, "UIPanelButtonTemplate")
+    btn:SetWidth(width); btn:SetHeight(22)
+    function btn:Refresh()
+        self:SetText(getText())
+        self:SetEnabled(#getValues() > 0)
+    end
+    btn:SetScript("OnClick", function(self)
+        if activeMultiMenuButton == self then
+            activeMultiMenuButton = nil
+            self:SetScript("OnUpdate", nil)
+            CloseDropDownMenus()
+            return
+        end
+        local menu = {}
+        for _, item in ipairs(getValues()) do
+            menu[#menu + 1] = {
+                text = item.label,
+                icon = "Interface\\Icons\\" .. item.icon,
+                checked = isSelected(item.id),
+                isNotRadio = true,
+                keepShownOnClick = true,
+                func = function()
+                    onToggle(item.id)
+                    self:Refresh()
+                end,
+            }
+        end
+        EasyMenu(menu, menuFrame, self, 0, 0, "MENU")
+        activeMultiMenuButton = self
+        self:SetScript("OnUpdate", function(button, elapsed)
+            if IsFocusWithin(button) then
+                button.outsideTime = 0
+            else
+                button.outsideTime = (button.outsideTime or 0) + elapsed
+                if button.outsideTime >= 0.15 then
+                    activeMultiMenuButton = nil
+                    button.outsideTime = 0
+                    button:SetScript("OnUpdate", nil)
+                    CloseDropDownMenus()
+                end
+            end
+        end)
     end)
     btn:Refresh()
     return btn
@@ -98,6 +176,10 @@ local function ShowTooltip(row)
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     GameTooltip:AddLine(ns.ListingTitle(l), 1, 0.82, 0, true)
     GameTooltip:AddLine(l.name .. " - " .. l.spec .. " " .. l.role, c.r, c.g, c.b)
+    local partnerSpecs = ns.GetPartnerSpecNames(l)
+    if #partnerSpecs > 0 then
+        GameTooltip:AddLine("Looking for: " .. table.concat(partnerSpecs, ", "), 0.7, 0.9, 1, true)
+    end
     GameTooltip:AddLine("Experience: " .. (ns.TIERS[l.tier] or "?"), 0.8, 0.8, 0.8)
     GameTooltip:AddLine("Gearscore: " .. (l.gs > 0 and l.gs or "not set"), 0.8, 0.8, 0.8)
     if l.hasTeam then
@@ -161,7 +243,7 @@ local function BuildRow(parent, i)
     row.title:SetJustifyH("LEFT")
 
     row.sub = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    row.sub:SetPoint("TOPLEFT", 8, -21); row.sub:SetWidth(300); row.sub:SetHeight(12)
+    row.sub:SetPoint("TOPLEFT", 8, -21); row.sub:SetWidth(195); row.sub:SetHeight(12)
     row.sub:SetJustifyH("LEFT")
     row.sub:SetTextColor(0.65, 0.65, 0.65)
 
@@ -176,6 +258,11 @@ local function BuildRow(parent, i)
     row.status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     row.status:SetPoint("TOPRIGHT", -36, -21); row.status:SetWidth(80); row.status:SetHeight(12)
     row.status:SetJustifyH("RIGHT")
+
+    row.age = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    row.age:SetPoint("TOPRIGHT", -120, -21); row.age:SetWidth(80); row.age:SetHeight(12)
+    row.age:SetJustifyH("RIGHT")
+    row.age:SetTextColor(0.65, 0.65, 0.65)
 
     row:SetScript("OnEnter", ShowTooltip)
     row:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -219,13 +306,20 @@ local function RefreshList()
         local row, l = f.rows[i], list[i + offset]
         if l then
             row.data = l
-            SetClassIcon(row.icon, l.class)
-            row.title:SetText(ns.ListingTitle(l))
+            SetListingSpecIcon(row.icon, l)
+            local c = RAID_CLASS_COLORS[l.class] or { r = 1, g = 1, b = 1 }
+            row.title:SetText(string.format("|cff%02x%02x%02x%s|r  %s",
+                math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255),
+                l.name, ns.ListingTitle(l)))
             local sub = "Arena (2v2)   " .. (l.hasTeam and ("Team " .. l.teamRating) or "No team")
             if l.gs > 0 then sub = sub .. "   GS " .. l.gs end
             if l.seasonal then sub = sub .. "   Seasonal" end
             if l.tenGames then sub = sub .. "   10 games" end
             row.sub:SetText(sub)
+            local age = math.max(0, GetTime() - (l.listedAt or l.seen or GetTime()))
+            local minutes = math.floor(age / 60)
+            row.age:SetText(minutes == 0 and "just now"
+                or (minutes == 1 and "1 min ago" or minutes .. " min ago"))
             row.role:SetText(ROLE_TEXT[l.role] or l.role)
             if l.name == me then
                 row.status:SetText("|cff00ff00Your group|r")
@@ -363,7 +457,7 @@ local function RefreshGroupView()
     if me.seasonal then info = info .. "   Seasonal" end
     if me.tenGames then info = info .. "   10 games" end
     w.info:SetText(info)
-    SetClassIcon(w.icon, me.class)
+    SetSpecIcon(w.icon, me.class)
 
     local list = {}
     for _, l in pairs(ns.applicants) do list[#list + 1] = l end
@@ -397,6 +491,10 @@ function ns.RefreshAll()
     RefreshGroupView()
 end
 
+ns.Every(60, function()
+    if ns.frame and ns.frame:IsShown() then RefreshList() end
+end)
+
 ----------------------------------------------------------------------
 -- Left side, view 2: list / edit my group (the form)
 ----------------------------------------------------------------------
@@ -411,54 +509,90 @@ local function BuildFormView(parent, f)
     w.char = MakeLabel(p, "", 12, -32, "GameFontHighlight")
     w.char:SetWidth(266); w.char:SetJustifyH("LEFT")
 
-    MakeLabel(p, "Role", 12, -62)
-    w.role = MakeMenuButton(p, 120,
-        function() return ns.ROLES end,
-        function() return m.role end,
-        function(v)
-            m.role = v
-            m.roleManual = true
-        end)
-    w.role:SetPoint("TOPLEFT", 100, -58)
+    MakeLabel(p, "Detected role", 12, -62)
+    w.detectedRole = MakeLabel(p, "", 100, -62, "GameFontHighlight")
 
-    MakeLabel(p, "Gearscore", 12, -92)
+    MakeLabel(p, "Seeking", 12, -92)
+    w.targetRole = MakeMenuButton(p, 86,
+        function() return ns.PARTNER_ROLES end,
+        function() return m.targetRole end,
+        function(v)
+            m.targetRole = v
+            if v == "Any" then m.targetAny = false end
+            w.targetSpecs:Refresh()
+        end)
+    w.targetRole:SetPoint("TOPLEFT", 100, -88)
+    w.targetSpecs = MakeMultiMenuButton(p, 100,
+        function()
+            local specs = {}
+            for _, spec in ipairs(ns.PARTNER_SPECS) do
+                if spec.role == m.targetRole then specs[#specs + 1] = spec end
+            end
+            if m.targetRole ~= "Any" then
+                table.insert(specs, 1, { id = "ANY", label = "Any spec" })
+            end
+            return specs
+        end,
+        function(id)
+            if id == "ANY" then return m.targetAny end
+            return not m.targetAny and m.targetSpecs[id] and true or false
+        end,
+        function(id)
+            if id == "ANY" then
+                m.targetAny = not m.targetAny
+                if m.targetAny then wipe(m.targetSpecs) end
+            else
+                m.targetAny = false
+                if m.targetSpecs[id] then m.targetSpecs[id] = nil
+                else m.targetSpecs[id] = true end
+            end
+        end,
+        function()
+            if m.targetRole == "Any" then return "Choose role" end
+            if m.targetAny then return "Any spec" end
+            local count = #ns.GetPartnerSpecNames({ targetRole = m.targetRole, targetSpecs = m.targetSpecs })
+            return count > 0 and ("Specs (" .. count .. ")") or "Select specs"
+        end)
+    w.targetSpecs:SetPoint("TOPLEFT", 188, -88)
+
+    MakeLabel(p, "Gearscore", 12, -122)
     w.gs = MakeEdit(p, 70, true, 5)
-    w.gs:SetPoint("TOPLEFT", 108, -88)
+    w.gs:SetPoint("TOPLEFT", 108, -118)
 
     w.team = MakeCheck(p, "I have a 2v2 team")
-    w.team:SetPoint("TOPLEFT", 6, -114)
+    w.team:SetPoint("TOPLEFT", 6, -144)
     w.team:Disable() -- read from the game, not editable
-    w.rating = MakeLabel(p, "", 172, -122, "GameFontHighlight")
+    w.rating = MakeLabel(p, "", 172, -152, "GameFontHighlight")
 
-    w.detect = MakeLabel(p, "", 12, -146, "GameFontNormalSmall")
+    w.detect = MakeLabel(p, "", 12, -176, "GameFontNormalSmall")
     w.detect:SetWidth(266); w.detect:SetJustifyH("LEFT")
 
-    MakeLabel(p, "Experience", 12, -184)
+    MakeLabel(p, "Experience", 12, -212)
     w.tier = MakeMenuButton(p, 150,
         function() return ns.TIERS end,
         function() return ns.TIERS[m.tier] end,
         function(v)
             for i, t in ipairs(ns.TIERS) do if t == v then m.tier = i end end
         end)
-    w.tier:SetPoint("TOPLEFT", 100, -180)
+    w.tier:SetPoint("TOPLEFT", 100, -208)
 
     w.seasonal = MakeCheck(p, "Seasonal character", function(on) m.seasonal = on end)
-    w.seasonal:SetPoint("TOPLEFT", 6, -208)
+    w.seasonal:SetPoint("TOPLEFT", 6, -236)
     w.ten = MakeCheck(p, "10 games only (arena points)", function(on) m.tenGames = on end)
-    w.ten:SetPoint("TOPLEFT", 6, -234)
+    w.ten:SetPoint("TOPLEFT", 6, -262)
 
-    MakeLabel(p, "Group title (optional)", 12, -270)
+    MakeLabel(p, "Group title / comp (optional)", 12, -298)
     w.note = MakeEdit(p, 256, false, 60)
-    w.note:SetPoint("TOPLEFT", 16, -290)
+    w.note:SetPoint("TOPLEFT", 16, -318)
 
     w.post = MakeButton(p, "List Group", 124, 24)
-    w.post:SetPoint("TOPLEFT", 12, -324)
+    w.post:SetPoint("TOPLEFT", 12, -352)
     w.post:SetScript("OnClick", function() ns.PostMine() end)
     w.back = MakeButton(p, "Back", 124, 24)
     w.back:SetPoint("LEFT", w.post, "RIGHT", 6, 0)
     w.back:SetScript("OnClick", function() ns.SaveMine(); f.editing = false; UpdateLeft() end)
 
-    w.hint = MakeLabel(p, "Your role, gearscore and team are also what group leaders see when you sign up to their group.", 12, -356, "GameFontDisableSmall")
+    w.hint = MakeLabel(p, "Your role, gearscore and team are also what group leaders see when you sign up.", 12, -384, "GameFontDisableSmall")
     w.hint:SetWidth(266); w.hint:SetJustifyH("LEFT")
 
     return p
@@ -473,7 +607,8 @@ function ns.UI_LoadMine()
     local c = RAID_CLASS_COLORS[ns.GetMyClass()] or { r = 1, g = 1, b = 1 }
     w.char:SetText(UnitName("player") .. "  -  " .. (UnitClass("player")) .. ", " .. ns.GetMySpec())
     w.char:SetTextColor(c.r, c.g, c.b)
-    w.role:Refresh(); w.tier:Refresh()
+    w.detectedRole:SetText(m.role)
+    w.tier:Refresh(); w.targetRole:Refresh(); w.targetSpecs:Refresh()
     w.gs:SetText(m.gs > 0 and m.gs or "")
     w.gs:EnableMouse(not info.gs)
     w.gs:EnableKeyboard(not info.gs)
@@ -530,6 +665,11 @@ function ns.PostMine()
         return
     end
     ns.SaveMine()
+    if ns.DB.mine.targetRole ~= "Any" and not ns.DB.mine.targetAny
+        and #ns.GetPartnerSpecNames(ns.DB.mine) == 0 then
+        ns.Print("Select at least one preferred partner spec, choose Any spec, or set Seeking to Any.")
+        return
+    end
     ns.DB.mine.posted = true
     ns.frame.editing = false
     ns.AddListing(ns.MyListing())
@@ -605,6 +745,9 @@ function ns.BuildUI()
     f.right = right
 
     MakeLabel(right, "Arena 2v2 groups", 12, -12)
+    local listedHeader = MakeLabel(right, "Listed", 216, -55, "GameFontDisableSmall")
+    listedHeader:SetWidth(80)
+    listedHeader:SetJustifyH("RIGHT")
 
     local refresh = CreateFrame("Button", nil, right)
     refresh:SetWidth(24); refresh:SetHeight(24)
