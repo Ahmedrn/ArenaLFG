@@ -104,12 +104,6 @@ SlashCmdList["ARENALFG"] = function(msg)
     msg = strlower(strtrim(msg or ""))
     if msg == "" then
         ns.ToggleUI()
-    elseif msg == "fake" then
-        ns.AddFakeListings()
-        ns.Print("Added fake listings (local only).")
-    elseif msg == "fakeapp" then
-        ns.AddFakeApplicants()
-        ns.Print("Added fake applicants to your group (local only). Post a listing first to see them.")
     elseif msg == "clear" then
         wipe(ns.listings)
         ns.Changed()
@@ -136,6 +130,32 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg (toggle) | fake | fakeapp | clear | debug | me | comm | minimap")
     end
 end
+
+----------------------------------------------------------------------
+-- Auto-delist when a group forms
+----------------------------------------------------------------------
+function ns.InGroup()
+    return (GetNumPartyMembers() > 0) or (GetNumRaidMembers() > 0)
+end
+
+local gf = CreateFrame("Frame")
+gf:RegisterEvent("PARTY_MEMBERS_CHANGED")
+gf:RegisterEvent("RAID_ROSTER_UPDATE")
+gf:SetScript("OnEvent", function()
+    if not ns.DB or not ns.InGroup() then return end
+    -- group formed: remove my listing (leader or joiner)
+    if ns.DB.mine.posted then
+        ns.Print("You are in a group now, your listing was removed.")
+        ns.RemoveMine()
+    end
+    -- and cancel any sign-ups I still have pending elsewhere
+    for name, status in pairs(ns.applied) do
+        if status == "pending" then
+            local l = ns.listings[name]
+            if l then ns.CancelApply(l) else ns.applied[name] = nil end
+        end
+    end
+end)
 
 -- Quick reload while developing: /rl
 SLASH_ARENALFGRL1 = "/rl"

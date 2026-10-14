@@ -114,32 +114,6 @@ function ns.GetSorted()
 end
 
 ----------------------------------------------------------------------
--- Fake data to test the UI alone
-----------------------------------------------------------------------
-function ns.AddFakeListings()
-    local fakes = {
-        { name = "Testhunter", class = "HUNTER", spec = "Marksmanship", role = "DPS", gs = 5600,
-          hasTeam = true, teamRating = 1850, tier = 4, seasonal = false, tenGames = false,
-          note = "Need a healer, evenings" },
-        { name = "Testpriest", class = "PRIEST", spec = "Discipline", role = "Healer", gs = 5300,
-          hasTeam = false, teamRating = 0, tier = 3, seasonal = true, tenGames = true,
-          note = "10 games for points only" },
-        { name = "Testrogue", class = "ROGUE", spec = "Subtlety", role = "DPS", gs = 5900,
-          hasTeam = true, teamRating = 2120, tier = 5, seasonal = false, tenGames = false,
-          note = "Pushing rating, need resto druid" },
-        { name = "Testdruid", class = "DRUID", spec = "Restoration", role = "Healer", gs = 5100,
-          hasTeam = false, teamRating = 0, tier = 2, seasonal = true, tenGames = false, note = "" },
-        { name = "Testwarrior", class = "WARRIOR", spec = "Arms", role = "DPS", gs = 5750,
-          hasTeam = true, teamRating = 1620, tier = 3, seasonal = true, tenGames = true,
-          note = "Chill games, 10 per week" },
-    }
-    for _, l in ipairs(fakes) do
-        l.fake = true
-        ns.AddListing(l)
-    end
-end
-
-----------------------------------------------------------------------
 -- Titles, sign-ups and applicants (retail-style flow)
 ----------------------------------------------------------------------
 ns.appSeq = 0
@@ -195,17 +169,4 @@ function ns.DeclineApplicant(name)
     if l and not l.fake then Whisper(name, "DEC") end
     ns.applicants[name] = nil
     ns.Changed()
-end
-
-function ns.AddFakeApplicants()
-    local fakes = {
-        { name = "Fakemage", class = "MAGE", spec = "Frost", role = "DPS", gs = 5400,
-          hasTeam = false, teamRating = 0, tier = 3, seasonal = false, tenGames = false, note = "" },
-        { name = "Fakepally", class = "PALADIN", spec = "Holy", role = "Healer", gs = 5200,
-          hasTeam = false, teamRating = 0, tier = 4, seasonal = true, tenGames = false, note = "" },
-    }
-    for _, l in ipairs(fakes) do
-        l.fake = true
-        ns.AddApplicant(l)
-    end
 end

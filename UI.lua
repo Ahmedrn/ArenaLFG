@@ -521,6 +521,10 @@ function UpdateLeft()
 end
 
 function ns.PostMine()
+    if ns.InGroup() then
+        ns.Print("You are already in a group. Leave it before listing your group.")
+        return
+    end
     ns.SaveMine()
     ns.DB.mine.posted = true
     ns.frame.editing = false
