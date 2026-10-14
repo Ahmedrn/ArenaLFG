@@ -674,3 +674,78 @@ function ns.ToggleUI()
     if not ns.frame then ns.BuildUI() end
     if ns.frame:IsShown() then ns.frame:Hide() else ns.frame:Show() end
 end
+
+function ns.ShowUIAtPVP()
+    if not ns.frame then ns.BuildUI() end
+
+    local anchor = PVPParentFrame
+    if not anchor or not anchor:IsVisible() then anchor = PVPFrame end
+    if not anchor or not anchor:IsVisible() then
+        ns.frame:Hide()
+        return
+    end
+
+    local f = ns.frame
+    local anchorLeft, anchorRight, anchorTop = anchor:GetLeft(), anchor:GetRight(), anchor:GetTop()
+    if not anchorLeft or not anchorRight or not anchorTop then
+        f:ClearAllPoints()
+        f:SetPoint("CENTER")
+        f:Show()
+        return
+    end
+
+    local screenWidth, screenHeight = UIParent:GetWidth(), UIParent:GetHeight()
+    local width, height = f:GetWidth(), f:GetHeight()
+    local gap = 12
+    local leftSpace = anchorLeft
+    local rightSpace = screenWidth - anchorRight
+    local x
+    if rightSpace >= width + gap or rightSpace >= leftSpace then
+        x = anchorRight + gap
+    else
+        x = anchorLeft - width - gap
+    end
+    x = math.max(0, math.min(x, screenWidth - width))
+
+    local y = screenHeight - anchorTop
+    y = math.max(0, math.min(y, screenHeight - height))
+
+    f:ClearAllPoints()
+    f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, -y)
+    f:Show()
+end
+
+local pvpToggleHooked, pvpDetailsHooked = false, false
+local function InstallPVPFrameHooks()
+    if not pvpToggleHooked and type(TogglePVPFrame) == "function" then
+        hooksecurefunc("TogglePVPFrame", function()
+            local anchor = PVPParentFrame
+            if not anchor or not anchor:IsVisible() then anchor = PVPFrame end
+            if anchor and anchor:IsVisible() then
+                ns.ShowUIAtPVP()
+            elseif ns.frame then
+                ns.frame:Hide()
+            end
+        end)
+        pvpToggleHooked = true
+    end
+
+    if not pvpDetailsHooked and PVPTeamDetails then
+        hooksecurefunc(PVPTeamDetails, "Show", function(details)
+            if not ns.frame or not ns.frame:IsShown() then return end
+            details:SetFrameStrata(ns.frame:GetFrameStrata())
+            details:SetFrameLevel(math.max(details:GetFrameLevel(), ns.frame:GetFrameLevel() + 1))
+        end)
+        pvpDetailsHooked = true
+    end
+
+    return pvpToggleHooked and pvpDetailsHooked
+end
+
+local pvpHookFrame = CreateFrame("Frame")
+pvpHookFrame:RegisterEvent("ADDON_LOADED")
+pvpHookFrame:RegisterEvent("PLAYER_LOGIN")
+pvpHookFrame:SetScript("OnEvent", function(self)
+    if InstallPVPFrameHooks() then self:UnregisterAllEvents() end
+end)
+if InstallPVPFrameHooks() then pvpHookFrame:UnregisterAllEvents() end
