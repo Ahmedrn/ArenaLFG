@@ -12,7 +12,7 @@ Stop scrolling through global chat: see who is looking for a 2v2 partner, sign u
 - **Group browser** with class-colored player names, listing age, search and filters: role, team / no team, seasonal / non-seasonal, "10 games only".
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
-- **List your group** with role, gearscore, experience tier, a group title that can describe your preferred composition (for example, "Holy Paladin or Resto Druid"), and flags (seasonal character, 10 games for arena points).
+- **List your group** with role, gearscore, experience tier, a group title that can describe your preferred composition (for example, "Holy Paladin or Resto Druid"), and flags (seasonal character, 10 games for arena points). Listing settings are saved separately for each character.
 - **Preferred partner specs:** choose a role, then select one or more specs or choose **Any spec** (for example, Healer → Holy Paladin and Restoration Druid, or any Healer); their icons or role preference appear in the displayed group title.
 - **Auto-detection**: your class, spec, 2v2 team and team rating are read from the game. Spec icons appear on your group card and in browser listings. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
 - **Roles:** DPS, Healer, Tank. Your role is automatically detected from your class and primary talent tree and shown in your listing.
