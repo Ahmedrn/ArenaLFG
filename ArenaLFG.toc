@@ -1,0 +1,20 @@
+## Interface: 30300
+## X-GitHub-Repository: Ahmedrn/ArenaLFG
+## X-GitHub-Project-Homepage: https://github.com/Ahmedrn/ArenaLFG
+## X-GitHub-Project-Licence: MIT
+## X-GitHub-Project-Issues: https://github.com/Ahmedrn/ArenaLFG/issues
+## X-GitHub-Project-Download: https://github.com/Ahmedrn/ArenaLFG/releases/download/1.0.0/ArenaLFG.zip
+
+## Title: ArenaLFG
+## Notes: 2v2 arena partner finder with synced listings.
+## Author: Skom
+## Version: 1.0.0
+## SavedVariables: ArenaLFGDB
+## OptionalDeps: GearScore, GearScoreLite
+
+Core.lua
+Data.lua
+Listings.lua
+Comm.lua
+Minimap.lua
+UI.lua
