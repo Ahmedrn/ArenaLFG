@@ -1,0 +1,14 @@
+## Interface: 30300
+## Title: ArenaLFG
+## Notes: 2v2 arena partner finder with synced listings.
+## Author: Skom
+## Version: 1.0.0
+## SavedVariables: ArenaLFGDB
+## OptionalDeps: GearScore, GearScoreLite
+
+Core.lua
+Data.lua
+Listings.lua
+Comm.lua
+Minimap.lua
+UI.lua
