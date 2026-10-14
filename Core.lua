@@ -138,16 +138,28 @@ function ns.InGroup()
     return (GetNumPartyMembers() > 0) or (GetNumRaidMembers() > 0)
 end
 
+function ns.InPvpInstance()
+    local inInstance, instanceType = IsInInstance()
+    return inInstance and (instanceType == "arena" or instanceType == "pvp")
+end
+
 local gf = CreateFrame("Frame")
 gf:RegisterEvent("PARTY_MEMBERS_CHANGED")
 gf:RegisterEvent("RAID_ROSTER_UPDATE")
+gf:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 gf:SetScript("OnEvent", function()
-    if not ns.DB or not ns.InGroup() then return end
-    -- group formed: remove my listing (leader or joiner)
+    if not ns.DB then return end
+    local grouped = ns.InGroup()
+    local inPvpInstance = ns.InPvpInstance()
+    if not grouped and not inPvpInstance then return end
+
     if ns.DB.mine.posted then
-        ns.Print("You are in a group now, your listing was removed.")
+        ns.Print(grouped and "You are in a group now, your listing was removed."
+            or "You entered an arena or battleground, your listing was removed.")
         ns.RemoveMine()
     end
+
+    if not grouped then return end
     -- and cancel any sign-ups I still have pending elsewhere
     for name, status in pairs(ns.applied) do
         if status == "pending" then

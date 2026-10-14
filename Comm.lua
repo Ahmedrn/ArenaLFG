@@ -62,9 +62,18 @@ function ns.Comm_Join()
             end
             ns.Debug("joined sync channel, id " .. chanId)
             ns.Comm_Request() -- ask others to announce themselves
-            if ns.DB and ns.DB.mine.posted then
-                ns.AddListing(ns.MyListing())
-                ns.Broadcast()
+            if ns.DB then
+                if ns.InGroup() or ns.InPvpInstance() then
+                    if ns.DB.mine.posted then
+                        ns.Print("You are grouped or in an arena/battleground, so your saved listing was removed.")
+                        ns.RemoveMine()
+                    else
+                        ns.BroadcastRemove()
+                    end
+                elseif ns.DB.mine.posted then
+                    ns.AddListing(ns.MyListing())
+                    ns.Broadcast()
+                end
             end
             ns.Changed() -- refresh the sync status shown in the UI
         else
