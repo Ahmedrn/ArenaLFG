@@ -12,7 +12,7 @@ Stop scrolling through global chat: see who is looking for a 2v2 partner, sign u
 - **Group browser** with search and filters: role, team / no team, seasonal / non-seasonal, "10 games only".
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **List your group** with role, gearscore, experience tier, a short title and flags (seasonal character, 10 games for arena points).
-- **Auto-detection**: your class, spec, 2v2 team and team rating are read from the game. Gearscore is read from your GearScore addon if you have one.
+- **Auto-detection**: your class, spec, 2v2 team and team rating are read from the game. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
 - **Roles:** DPS, Healer, Tank. ArenaLFG suggests a role from your class and primary talent tree; you can choose a different role in the listing form.
 - **PvP UI integration:** press **H** or click the **Player vs. Player** micro menu button to open ArenaLFG beside the PvP window. The minimap button and `/alfg` also open it.
 - **Clean chat:** sync traffic is filtered from your chat windows, though the plain-text channel messages are visible to anyone who joins the channel.
@@ -73,7 +73,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 ## Requirements
 
 - WoW client **3.3.5a** (interface 30300).
-- Optional: a GearScore addon (GearScore / GearScoreLite). Without one, enter your gearscore by hand.
+- Optional: a compatible GearScore addon (GearScore / GearScoreLite). Without one, or if its score API is unavailable, enter your gearscore by hand; other players cannot verify that value.
 
 ## Troubleshooting
 
