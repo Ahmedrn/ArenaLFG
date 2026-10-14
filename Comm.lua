@@ -1,34 +1,52 @@
 local ADDON, ns = ...
 
 -- 3.3.5 has no addon-message type for custom channels, so listings travel as
--- plain text messages in a hidden custom channel. The channel is removed from
--- every chat window and its traffic is filtered out, so nobody sees it.
+-- plain text messages in a custom channel. Its traffic is filtered locally;
+-- other players in the channel can still see the messages.
 --   "AL1;..."  a listing      "ALrm"  listing removed      "ALreq"  please re-announce
 
 local chanId = 0
 local lower = string.lower
+local REQUEST_COOLDOWN = 10
+local lastBroadcastAt
+local lastRequestAt
+local requestResponsePending = false
 
-function ns.Comm_IsJoined() return chanId > 0 end
+local function RefreshChannelId()
+    chanId = tonumber((GetChannelName(ns.CHANNEL))) or 0
+    return chanId
+end
+
+function ns.Comm_IsJoined() return RefreshChannelId() > 0 end
 
 function ns.Comm_Status()
+    RefreshChannelId()
     ns.Print("Sync channel '" .. ns.CHANNEL .. "' id: " .. tostring(chanId)
         .. (chanId > 0 and " (joined)" or " (NOT joined)"))
 end
 
 local function IsOurChannel(channelString)
-    return channelString and lower(channelString):find(lower(ns.CHANNEL), 1, true)
+    return type(channelString) == "string"
+        and lower(channelString):find(lower(ns.CHANNEL), 1, true)
 end
 
 -- Hide the channel's messages and join/leave notices from chat windows
-local function ChatFilter(self, event, msg, author, lang, channelString)
-    if IsOurChannel(channelString) then return true end
+local function ChatFilter(self, event, ...)
+    if event == "CHAT_MSG_CHANNEL" then
+        local _, _, _, channelString = ...
+        if IsOurChannel(channelString) then return true end
+    else
+        for i = 1, select("#", ...) do
+            if IsOurChannel(select(i, ...)) then return true end
+        end
+    end
 end
 ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", ChatFilter)
 ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL_NOTICE", ChatFilter)
 ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL_NOTICE_USER", ChatFilter)
 
 local function Send(text)
-    if chanId == 0 then return false end
+    if RefreshChannelId() <= 0 then return false end
     SendChatMessage(text, "CHANNEL", nil, chanId)
     return true
 end
@@ -36,14 +54,14 @@ end
 function ns.Comm_Join()
     JoinChannelByName(ns.CHANNEL)
     ns.After(2, function()
-        chanId = tonumber((GetChannelName(ns.CHANNEL))) or 0
+        RefreshChannelId()
         if chanId > 0 then
             for i = 1, (NUM_CHAT_WINDOWS or 10) do
                 local cf = _G["ChatFrame" .. i]
                 if cf then ChatFrame_RemoveChannel(cf, ns.CHANNEL) end
             end
             ns.Debug("joined sync channel, id " .. chanId)
-            pcall(Send, "ALreq") -- ask others to announce themselves
+            ns.Comm_Request() -- ask others to announce themselves
             if ns.DB and ns.DB.mine.posted then
                 ns.AddListing(ns.MyListing())
                 ns.Broadcast()
@@ -58,8 +76,9 @@ end
 function ns.Broadcast()
     local l = ns.MyListing()
     if not l then return end
-    local ok = pcall(Send, ns.Encode(l))
-    ns.Debug("sent listing: " .. tostring(ok))
+    local ok, sent = pcall(Send, ns.Encode(l))
+    if ok and sent then lastBroadcastAt = GetTime() end
+    ns.Debug("sent listing: " .. tostring(ok and sent))
 end
 
 function ns.BroadcastRemove()
@@ -84,8 +103,16 @@ f:SetScript("OnEvent", function(self, event, msg, sender, lang, channelString)
         ns.applied[sender] = nil
         ns.RemoveListing(sender)
     elseif msg == "ALreq" then
-        if ns.DB and ns.DB.mine.posted then
-            ns.After(math.random() * 5, ns.Broadcast) -- spread replies out
+        if ns.DB and ns.DB.mine.posted and not requestResponsePending
+            and (not lastBroadcastAt or GetTime() - lastBroadcastAt >= REQUEST_COOLDOWN) then
+            requestResponsePending = true
+            ns.After(math.random() * 5, function()
+                requestResponsePending = false
+                if ns.DB and ns.DB.mine.posted
+                    and (not lastBroadcastAt or GetTime() - lastBroadcastAt >= REQUEST_COOLDOWN) then
+                    ns.Broadcast()
+                end
+            end)
         end
     elseif strsub(msg, 1, 4) == "AL1;" then
         local l = ns.Decode(msg, sender)
@@ -95,7 +122,12 @@ end)
 
 -- Ask everyone to re-announce their listing (refresh button)
 function ns.Comm_Request()
-    pcall(Send, "ALreq")
+    local now = GetTime()
+    if lastRequestAt and now - lastRequestAt < REQUEST_COOLDOWN then return false end
+    local ok, sent = pcall(Send, "ALreq")
+    if not ok or not sent then return false end
+    lastRequestAt = now
+    return true
 end
 
 -- Private messages between players (sign-ups), sent as addon whispers

@@ -62,9 +62,9 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 
 3.3.5 addons cannot access the internet, so ArenaLFG syncs through the game itself:
 
-- **Listings** are sent as plain text in a hidden custom channel called `ArenaLFGSync`. The addon joins it automatically, removes it from your chat windows and filters its messages and join/leave notices, so you never see them. Every 60 seconds your listing is re-announced; a listing disappears after about 2.5 minutes without an update.
+- **Listings** are sent as plain text in a custom channel called `ArenaLFGSync`. The addon joins it automatically, removes it from your chat windows and filters its messages and join/leave notices. The traffic is not private: anyone who joins that channel can see it. Every 60 seconds your listing is re-announced; a listing disappears after about 2.5 minutes without an update. Refresh requests are limited to one every 10 seconds, and posters ignore requests shortly after announcing.
 - **Sign-ups, invites and declines** are private addon messages sent directly between the two players.
-- Only players who run ArenaLFG can see each other's groups. Alliance and Horde use separate lists, as the game does not allow channel chat across factions.
+- ArenaLFG turns the channel messages into listings; players without the addon will only see the raw messages. Alliance and Horde use separate lists, as the game does not allow channel chat across factions.
 
 ### Privacy
 
