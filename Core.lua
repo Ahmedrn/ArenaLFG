@@ -1,7 +1,7 @@
 local ADDON, ns = ...
 _G.ArenaLFG = ns -- handy in game: /run print(ArenaLFG.VERSION)
 
-ns.VERSION   = "0.1"
+ns.VERSION   = "1.1.0"
 ns.PREFIX    = "ARENALFG"       -- addon message prefix
 ns.CHANNEL   = "ArenaLFGSync"   -- hidden sync channel
 ns.EXPIRE    = 150            -- seconds without heartbeat before a listing disappears
