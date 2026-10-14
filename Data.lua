@@ -1,7 +1,93 @@
 local ADDON, ns = ...
 
+ns.PARTNER_ROLES = { "Any", "DPS", "Healer", "Tank" }
+ns.PARTNER_SPECS = {
+    { id = "W1", role = "DPS", label = "Arms Warrior", icon = "Ability_Warrior_SavageBlow" },
+    { id = "W2", role = "DPS", label = "Fury Warrior", icon = "Ability_Warrior_InnerRage" },
+    { id = "W3", role = "Tank", label = "Protection Warrior", icon = "Ability_Warrior_DefensiveStance" },
+    { id = "P1", role = "Healer", label = "Holy Paladin", icon = "Spell_Holy_HolyBolt" },
+    { id = "P2", role = "Tank", label = "Protection Paladin", icon = "Spell_Holy_DevotionAura" },
+    { id = "P3", role = "DPS", label = "Retribution Paladin", icon = "Spell_Holy_AuraOfLight" },
+    { id = "H1", role = "DPS", label = "Beast Mastery Hunter", icon = "Ability_Hunter_BeastTaming" },
+    { id = "H2", role = "DPS", label = "Marksmanship Hunter", icon = "Ability_Marksmanship" },
+    { id = "H3", role = "DPS", label = "Survival Hunter", icon = "Ability_Hunter_SwiftStrike" },
+    { id = "R1", role = "DPS", label = "Assassination Rogue", icon = "Ability_Rogue_DeadlyBrew" },
+    { id = "R2", role = "DPS", label = "Combat Rogue", icon = "Ability_BackStab" },
+    { id = "R3", role = "DPS", label = "Subtlety Rogue", icon = "Ability_Stealth" },
+    { id = "C1", role = "Healer", label = "Discipline Priest", icon = "Spell_Holy_PowerWordShield" },
+    { id = "C2", role = "Healer", label = "Holy Priest", icon = "Spell_Holy_GuardianSpirit" },
+    { id = "C3", role = "DPS", label = "Shadow Priest", icon = "Spell_Shadow_ShadowWordPain" },
+    { id = "D1", role = "Tank", label = "Blood Death Knight", icon = "Spell_Deathknight_BloodPresence" },
+    { id = "D2", role = "DPS", label = "Frost Death Knight", icon = "Spell_Deathknight_FrostPresence" },
+    { id = "D3", role = "DPS", label = "Unholy Death Knight", icon = "Spell_Deathknight_UnholyPresence" },
+    { id = "S1", role = "DPS", label = "Elemental Shaman", icon = "Spell_Nature_Lightning" },
+    { id = "S2", role = "DPS", label = "Enhancement Shaman", icon = "Spell_Shaman_ImprovedStormstrike" },
+    { id = "S3", role = "Healer", label = "Restoration Shaman", icon = "Spell_Nature_MagicImmunity" },
+    { id = "M1", role = "DPS", label = "Arcane Mage", icon = "Spell_Arcane_Blast" },
+    { id = "M2", role = "DPS", label = "Fire Mage", icon = "Spell_Fire_FireBolt02" },
+    { id = "M3", role = "DPS", label = "Frost Mage", icon = "Spell_Frost_FrostBolt02" },
+    { id = "L1", role = "DPS", label = "Affliction Warlock", icon = "Spell_Shadow_DeathCoil" },
+    { id = "L2", role = "DPS", label = "Demonology Warlock", icon = "Spell_Shadow_Metamorphosis" },
+    { id = "L3", role = "DPS", label = "Destruction Warlock", icon = "Spell_Shadow_RainOfFire" },
+    { id = "U1", role = "DPS", label = "Balance Druid", icon = "Spell_Nature_StarFall" },
+    { id = "U2", role = "DPS", label = "Feral Druid", icon = "Ability_Druid_CatForm" },
+    { id = "U3", role = "Healer", label = "Restoration Druid", icon = "Spell_Nature_HealingTouch" },
+}
+
+function ns.GetPartnerSpecNames(listing)
+    local selected, names = listing and listing.targetSpecs, {}
+    if type(selected) ~= "table" then return names end
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if spec.role == listing.targetRole and selected[spec.id] then
+            names[#names + 1] = spec.label
+        end
+    end
+    return names
+end
+
+function ns.GetPartnerSpecIcons(listing)
+    local selected, icons = listing and listing.targetSpecs, {}
+    if type(selected) ~= "table" then return icons end
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if spec.role == listing.targetRole and selected[spec.id] then
+            icons[#icons + 1] = spec.icon
+        end
+    end
+    return icons
+end
+
+local SPEC_PREFIX_BY_CLASS = {
+    WARRIOR = "W",
+    PALADIN = "P",
+    HUNTER = "H",
+    ROGUE = "R",
+    PRIEST = "C",
+    DEATHKNIGHT = "D",
+    SHAMAN = "S",
+    MAGE = "M",
+    WARLOCK = "L",
+    DRUID = "U",
+}
+
 function ns.GetMyClass()
     return select(2, UnitClass("player")) -- token, e.g. "HUNTER"
+end
+
+function ns.IsValidSpecId(class, specId)
+    local prefix = SPEC_PREFIX_BY_CLASS[class]
+    if not prefix or type(specId) ~= "string" or strsub(specId, 1, 1) ~= prefix then return nil end
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if spec.id == specId then return true end
+    end
+    return false
+end
+
+function ns.GetSpecIcon(class, specId)
+    if not ns.IsValidSpecId(class, specId) then return nil end
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if spec.id == specId then return spec.icon end
+    end
+    return nil
 end
 
 local ROLE_BY_TALENT_TAB = {
@@ -26,6 +112,17 @@ local function GetPrimaryTalentTab()
         end
     end
     return best
+end
+
+function ns.GetMySpecId()
+    local prefix = SPEC_PREFIX_BY_CLASS[ns.GetMyClass()]
+    local tab = GetPrimaryTalentTab()
+    if not prefix or not tab then return nil end
+    return prefix .. tab
+end
+
+function ns.GetMySpecIcon()
+    return ns.GetSpecIcon(ns.GetMyClass(), ns.GetMySpecId())
 end
 
 -- Spec = talent tree with the most points
@@ -82,18 +179,24 @@ f:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE")
 f:RegisterEvent("PLAYER_TALENT_UPDATE")
 f:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 f:SetScript("OnEvent", function()
-    if ns.frame and ns.frame.mine and ns.frame.mine:IsShown() then
-        ns.SaveMine()
-        ns.UI_LoadMine()
+    if not ns.DB then return end
+    local editing = ns.frame and ns.frame.mine and ns.frame.mine:IsShown()
+    if editing then ns.SaveMine() end
+
+    local oldRole = ns.DB.mine.role
+    ns.DetectMine()
+    if editing then ns.UI_LoadMine() end
+
+    if ns.DB.mine.posted and oldRole ~= ns.DB.mine.role then
+        ns.AddListing(ns.MyListing())
+        ns.Broadcast()
     end
 end)
 
 -- Pull what the game can tell us. The 2v2 team is authoritative: no team = no team.
 function ns.DetectMine()
     local m, info = ns.DB.mine, {}
-    if not m.roleManual then
-        m.role = ns.GetSuggestedRole() or m.role
-    end
+    m.role = ns.GetSuggestedRole() or "DPS"
     local gs = ns.GetMyGearScore()
     if gs then m.gs = gs; info.gs = true end
     local tname, rating = ns.GetMy2v2Team()

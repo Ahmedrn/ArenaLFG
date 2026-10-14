@@ -151,7 +151,9 @@ af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
         if l then
             ns.AddApplicant(l)
             ns.Print(sender .. " signed up for your group.")
-            PlaySound("TellMessage")
+            if not (ns.frame and ns.frame:IsShown()) then
+                PlaySound("TellMessage")
+            end
         end
     elseif msg == "CANCEL" then
         ns.applicants[sender] = nil
