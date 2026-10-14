@@ -148,10 +148,12 @@ af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
         ns.applicants[sender] = nil
         ns.Changed()
     elseif msg == "INV" then
+        if ns.applied[sender] ~= "pending" then return end
         ns.applied[sender] = "invited"
         ns.Print(sender .. " invited you to their group.")
         ns.Changed()
     elseif msg == "DEC" then
+        if ns.applied[sender] ~= "pending" then return end
         ns.applied[sender] = "declined"
         ns.Changed()
     end
