@@ -14,8 +14,8 @@ Stop scrolling through global chat: see who is looking for a 2v2 partner, sign u
 - **List your group** with role, gearscore, experience tier, a short title and flags (seasonal character, 10 games for arena points).
 - **Auto-detection**: your class, spec, 2v2 team and team rating are read from the game. Gearscore is read from your GearScore addon if you have one.
 - **Roles:** DPS, Healer, Tank.
-- **Minimap button** to open the window.
-- **Nothing in your chat window:** listings travel through a hidden channel that is filtered out of every chat frame.
+- **PvP UI integration:** press **H** or click the **Player vs. Player** micro menu button to open ArenaLFG beside the PvP window. The minimap button and `/alfg` also open it.
+- **Clean chat:** sync traffic is filtered from your chat windows, though the plain-text channel messages are visible to anyone who joins the channel.
 
 ## Installation
 
@@ -32,7 +32,7 @@ The folder must be named exactly `ArenaLFG`.
 
 | Action | How |
 | --- | --- |
-| Open / close the window | Click the minimap button, or type `/alfg` |
+| Open / close the window | Press **H** or click **Player vs. Player** to open beside the PvP window; click the minimap button or type `/alfg` to toggle |
 | List your group | Left panel, fill the form, press **List Group** |
 | Edit or remove your group | **Edit** / **Delist My Group** (also in the right-click menu on your row) |
 | Sign up to a group | Click a group in the list, then **Sign Up** |
