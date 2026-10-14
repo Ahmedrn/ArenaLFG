@@ -490,7 +490,8 @@ function ns.UI_LoadMine()
     w.note:SetText(m.note or "")
 
     local txt = (info.team and ("2v2 team \"" .. info.team .. "\" found") or "No 2v2 team found on this character")
-        .. (info.gs and "; gearscore read from your GearScore addon." or "; gearscore unavailable, enter your GS by hand.")
+        .. (info.gs and "; gearscore read from your GearScore addon."
+            or "; GearScore API unavailable; gearscore is self-reported.")
     w.detect:SetText((info.team and "|cff00ff00" or "|cff999999") .. txt .. "|r")
 
     w.post:SetText(m.posted and "Update Listing" or "List Group")

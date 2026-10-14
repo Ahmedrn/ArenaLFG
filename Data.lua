@@ -45,8 +45,8 @@ function ns.GetSuggestedRole()
     return classRoles and tab and classRoles[tab] or nil
 end
 
--- Soft dependency: only used if a GearScore addon is installed.
--- Function name taken from the original GearScore addon; verify it in its source.
+-- GearScore_GetScore(name, unit) returns the score first and item level second.
+-- Verified against the installed GearScoreLite 1.84 API.
 function ns.GetMyGearScore()
     if type(GearScore_GetScore) == "function" then
         local ok, gs = pcall(GearScore_GetScore, UnitName("player"), "player")
