@@ -56,7 +56,7 @@ local defaults = {
     debug = false,
     minimap = { angle = 200, hide = false },
     mine = {
-        role = "DPS", gs = 0,
+        role = "DPS", roleManual = false, gs = 0,
         hasTeam = false, teamRating = 0,
         tier = 1, seasonal = false, tenGames = false,
         note = "", posted = false,
@@ -81,8 +81,13 @@ ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 ev:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON then
         ArenaLFGDB = ArenaLFGDB or {}
+        local savedRole = type(ArenaLFGDB.mine) == "table" and ArenaLFGDB.mine.role
+        local roleManual = type(ArenaLFGDB.mine) == "table" and ArenaLFGDB.mine.roleManual
         CopyDefaults(defaults, ArenaLFGDB)
         ns.DB = ArenaLFGDB
+        if roleManual == nil and savedRole and savedRole ~= "DPS" then
+            ns.DB.mine.roleManual = true
+        end
         ns.DEBUG = ArenaLFGDB.debug
         local okRole = false
         for _, r in ipairs(ns.ROLES) do if r == ArenaLFGDB.mine.role then okRole = true end end
