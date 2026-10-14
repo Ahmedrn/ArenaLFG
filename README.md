@@ -40,7 +40,7 @@ The folder must be named exactly `ArenaLFG`.
 | Invite an applicant | Press **Invite** next to their name (sends a normal party invite) |
 | Refresh the list | The refresh button asks other players to announce their groups again |
 
-Listings expire automatically if the poster goes offline, so the list stays clean.
+Listings expire automatically if the poster goes offline. Pending sign-ups clear when that leader's listing expires, and unhandled applicants expire after about 2.5 minutes. A saved listing is removed when you are grouped or enter an arena or battleground, so it will not automatically repost in those situations.
 
 ### Notes on your profile
 

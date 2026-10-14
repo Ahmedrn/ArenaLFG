@@ -54,6 +54,7 @@ end
 
 function ns.RemoveListing(name)
     ns.listings[name] = nil
+    ns.applied[name] = nil
     ns.Changed()
 end
 
@@ -81,6 +82,13 @@ ns.Every(5, function()
     for name, l in pairs(ns.listings) do
         if not l.fake and (now - l.seen) > ns.EXPIRE then
             ns.listings[name] = nil
+            ns.applied[name] = nil
+            removed = true
+        end
+    end
+    for name, l in pairs(ns.applicants) do
+        if not l.fake and l.received and (now - l.received) > ns.EXPIRE then
+            ns.applicants[name] = nil
             removed = true
         end
     end
@@ -150,6 +158,7 @@ end
 function ns.AddApplicant(l)
     ns.appSeq = ns.appSeq + 1
     l.order = ns.appSeq
+    l.received = GetTime()
     ns.applicants[l.name] = l
     ns.Changed()
 end
