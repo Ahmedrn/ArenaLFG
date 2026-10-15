@@ -8,7 +8,8 @@
 
 ## Features
 
-- **Group browser** with class-colored player names, race icons to help identify faction, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only".
+- **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
+- **Global chat import:** clear 2v2 partner ads from the `Global` channel appear as temporary, local-only listings. Class and race are read from the chat sender GUID when the client supports it; specialization is inferred from the ad text and may be unknown or inaccurate. Common abbreviations such as `2s`, `MM`, `elem`, and `boomkin` are recognized. Use **Invite** to send a normal party invite to a parsed ad.
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
 - **List your group** with role, gearscore, experience tier, preferred partner specs, a short title and flags (seasonal character, 10 games for arena points). The listed-group card mirrors the browser listing and shows your race, class-colored name, role, title, team details and listing age. Settings are saved separately for each character.
@@ -16,6 +17,7 @@
 - **Auto-detection**: your class, race, spec, 2v2 team and team rating are read from the game. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
 - **Roles:** DPS, Healer, Tank. Your role is automatically detected from your class and primary talent tree and shown in your listing.
 - **PvP UI integration:** enabled by default; ArenaLFG opens beside the PvP window when you open it (H is the default WoW PvP keybinding). Use the main-window checkbox or `/alfg pvp` to toggle the integration. The minimap button and `/alfg` always open ArenaLFG manually.
+- **Topmost window:** ArenaLFG uses the `DIALOG` frame strata and raises itself when opened to stay above most game windows.
 - **Clean chat:** sync traffic is filtered from your chat windows. Listing data is sent as plain text, so anyone who joins the sync channel can read it.
 
 ## Installation
@@ -57,6 +59,7 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | `/alfg pvp` | Toggle PvP window integration (enabled by default; also controlled by the main-window checkbox) |
 | `/alfg me` | Print what the addon detects about your character (class, spec, GS, arena teams) |
 | `/alfg comm` | Show sync channel status; retry joining if disconnected |
+| `/alfg global` | Check whether the Global chat parser loaded and whether the Global channel is joined |
 | `/alfg debug` | Toggle debug messages (sent / received data) |
 | `/alfg clear` | Clear the local list |
 
@@ -65,12 +68,13 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 3.3.5 addons cannot access the internet, so ArenaLFG syncs through the game itself:
 
 - **Listings** are sent as plain text in a custom channel called `ArenaLFGSync`. The addon joins it automatically, retrying up to three times if the initial join fails. `/alfg comm` checks the connection and retries if disconnected. The channel is removed from your chat windows and its messages and join/leave notices are filtered. The traffic is not private: anyone who joins that channel can see it. Every 60 seconds your listing is re-announced; a listing disappears after about 2.5 minutes without an update. Refresh requests are limited to one every 10 seconds; posters queue responses until their broadcast cooldown ends, then add a short random delay to spread out replies.
+- **Global chat ads** that clearly include a 2v2 marker and partner-seeking wording are parsed locally into provisional listings. They expire after two minutes and are not sent to the ArenaLFG sync channel. Class and race are read from the sender GUID when the client provides it; specialization is inferred from English spec names and common abbreviations. Otherwise, unknown details stay unknown. Parsed ads use a normal party invite rather than the addon sign-up flow.
 - **Sign-ups, invites and declines** are private addon messages sent directly between the two players.
 - ArenaLFG turns the channel messages into listings. Players without the addon who join the channel can read the raw messages. Alliance and Horde use separate lists, as the game does not allow channel chat across factions.
 
 ### Privacy
 
-When you list a group, your **character name, class, spec, role, gearscore, 2v2 team rating (if you have a team), experience tier, flags and title** are visible to other ArenaLFG users. When you sign up to a group, the same profile is sent privately to that leader. Nothing is sent outside the game and there is no external server.
+When you list a group, your **character name, class, spec, role, gearscore, 2v2 team rating (if you have a team), experience tier, flags and title** are visible to other ArenaLFG users. When you sign up to a group, the same profile is sent privately to that leader. Global chat ads are parsed locally and are not rebroadcast by ArenaLFG. Nothing is sent outside the game and there is no external server.
 
 ## Requirements
 
@@ -81,6 +85,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 
 - **"Could not join the sync channel":** the server may restrict custom channels, or you already have the maximum number of channels. Free a channel slot, then run `/alfg comm` to retry joining.
 - **The list stays empty:** the addon is only useful when other players run it too. Ask a friend to install it, post a group, and press the refresh button.
+- **A Global chat ad did not appear:** parsing is heuristic; the ad must be in the `Global` channel and include both a 2v2 marker (such as `2v2` or `2s`) and partner-seeking wording (such as `LFG`, `LF`, or `looking for`).
 - **Your 2v2 team is not detected:** run `/alfg me` and check the arena slots it prints. Open the PvP / arena team frame once, then `/reload`.
 - **The addon does not appear in the AddOns list:** check that the folder is named `ArenaLFG` and contains `ArenaLFG.toc` directly (not another folder inside).
 - **Lua errors:** enable error display with `/console scriptErrors 1` and open an issue with the message.
@@ -88,6 +93,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 ## Known limitations
 
 - Visible listings depend on how many players run the addon.
+- Global chat parsing recognizes common English wording and can misread ads; inferred details are not verified.
 - Gearscore is self-reported (or read from your GearScore addon), so it can be edited by the player.
 - Solo-queue style teams reported by the server are ignored; only real 2v2 teams count.
 

@@ -1,6 +1,12 @@
 local ADDON, ns = ...
 
 local ROW_H, ROWS = 38, 8
+local FACTION_SIZE = 26
+local FACTION_TEXT_X = 39
+local FACTION_COORDS = {
+    Alliance = { 0, 0.6, 0, 0.6 },
+    Horde = { 0, 0.6, 0, 0.6 },
+}
 local APP_H, APP_ROWS = 26, 8
 local CLASS_TEX = "Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes"
 local menuFrame = CreateFrame("Frame", "ArenaLFGMenuFrame", UIParent, "UIDropDownMenuTemplate")
@@ -43,9 +49,14 @@ local function MakePanel(parent, w, h)
 end
 
 local function SetClassIcon(tex, class)
-    tex:SetTexture(CLASS_TEX)
     local tc = CLASS_ICON_TCOORDS[class]
-    if tc then tex:SetTexCoord(unpack(tc)) end
+    if not tc then
+        tex:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+        tex:SetTexCoord(0, 1, 0, 1)
+        return
+    end
+    tex:SetTexture(CLASS_TEX)
+    tex:SetTexCoord(unpack(tc))
 end
 
 local function SetSpecIcon(tex, class)
@@ -66,6 +77,12 @@ local function SetListingSpecIcon(tex, listing)
     else
         SetClassIcon(tex, listing.class)
     end
+end
+
+local function FactionRaceMarkup(race)
+    local raceIcon = ns.GetRaceIcon(race)
+    local raceMarkup = raceIcon and ("|TInterface\\Icons\\" .. raceIcon .. ":14:14|t ") or ""
+    return raceMarkup
 end
 
 -- Button that opens a stock dropdown menu; text shows the current value
@@ -179,6 +196,9 @@ local function ShowTooltip(row)
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     GameTooltip:AddLine(ns.ListingTitle(l), 1, 0.82, 0, true)
     GameTooltip:AddLine(l.name .. " - " .. l.spec .. " " .. l.role, c.r, c.g, c.b)
+    if l.source == "global" then
+        GameTooltip:AddLine("Parsed from Global chat; details may be incomplete.", 0.8, 0.8, 0.8, true)
+    end
     local raceName = ns.GetRaceName(l.race)
     if raceName then GameTooltip:AddLine("Race: " .. raceName, 0.8, 0.8, 0.8) end
     local partnerSpecs = ns.GetPartnerSpecNames(l)
@@ -187,7 +207,9 @@ local function ShowTooltip(row)
     end
     GameTooltip:AddLine("Experience: " .. (ns.TIERS[l.tier] or "?"), 0.8, 0.8, 0.8)
     GameTooltip:AddLine("Gearscore: " .. (l.gs > 0 and l.gs or "not set"), 0.8, 0.8, 0.8)
-    if l.hasTeam then
+    if l.teamKnown == false then
+        GameTooltip:AddLine("Team status not detected from chat", 0.8, 0.8, 0.8)
+    elseif l.hasTeam then
         GameTooltip:AddLine("Has a 2v2 team, rating " .. l.teamRating, 0.2, 1, 0.2)
     else
         GameTooltip:AddLine("No team yet", 0.8, 0.8, 0.8)
@@ -243,6 +265,10 @@ local function BuildRow(parent, i)
     row.line:SetPoint("BOTTOMLEFT"); row.line:SetPoint("BOTTOMRIGHT")
     row.line:SetTexture(1, 1, 1, 0.08)
 
+    row.faction = row:CreateTexture(nil, "OVERLAY")
+    row.faction:SetWidth(FACTION_SIZE); row.faction:SetHeight(FACTION_SIZE)
+    row.faction:SetPoint("LEFT", row, "LEFT", 3, 0)
+
     row.title = row:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     row.title:SetPoint("TOPLEFT", 8, -5); row.title:SetWidth(400); row.title:SetHeight(14)
     row.title:SetJustifyH("LEFT")
@@ -288,6 +314,11 @@ local function UpdateSignUp()
         b:SetText("Sign Up"); b:Disable()
         return
     end
+    if l.source == "global" then
+        b:SetText("Invite")
+        b:Enable()
+        return
+    end
     local st = ns.applied[l.name]
     if st == "pending" then b:SetText("Cancel Sign-Up"); b:Enable()
     elseif st == "invited" then b:SetText("Invited"); b:Disable()
@@ -305,6 +336,7 @@ local function RefreshList()
     if not f then return end
     local list = ns.GetSorted()
     FauxScrollFrame_Update(f.scroll, #list, ROWS, ROW_H)
+    f.scrollBar:Show()
     local offset = FauxScrollFrame_GetOffset(f.scroll)
     local me = UnitName("player")
     for i = 1, ROWS do
@@ -312,14 +344,31 @@ local function RefreshList()
         if l then
             row.data = l
             SetListingSpecIcon(row.icon, l)
+            local faction = ns.GetFaction(l.race)
+            local textX = 8
+            if faction and FACTION_COORDS[faction] then
+                local tc = FACTION_COORDS[faction]
+                row.faction:SetTexture("Interface\\TargetingFrame\\UI-PVP-" .. faction)
+                row.faction:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
+                row.faction:Show()
+                textX = FACTION_TEXT_X
+            else
+                row.faction:Hide()
+            end
+            row.title:ClearAllPoints()
+            row.title:SetPoint("TOPLEFT", textX, -5)
+            row.title:SetWidth(408 - textX)
+            row.sub:ClearAllPoints()
+            row.sub:SetPoint("TOPLEFT", textX, -21)
+            row.sub:SetWidth(303 - textX)
             local c = RAID_CLASS_COLORS[l.class] or { r = 1, g = 1, b = 1 }
-            local raceIcon = ns.GetRaceIcon(l.race)
-            local raceMarkup = raceIcon and ("|TInterface\\Icons\\" .. raceIcon .. ":14:14|t ") or ""
-            row.title:SetText(raceMarkup .. string.format("|cff%02x%02x%02x%s|r  %s",
+            row.title:SetText(FactionRaceMarkup(l.race) .. string.format("|cff%02x%02x%02x%s|r  %s",
                 math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255),
                 l.name, ns.ListingTitle(l)))
+            local teamText = l.teamKnown == false and "Team ?"
+                or (l.hasTeam and ("Team " .. l.teamRating) or "No team")
             local sub = "Exp: " .. (ns.TIERS[l.tier] or "?")
-                .. "   " .. (l.hasTeam and ("Team " .. l.teamRating) or "No team")
+                .. "   " .. teamText
             if l.gs > 0 then sub = sub .. "   GS " .. l.gs end
             if l.seasonal then sub = sub .. "   Seasonal" end
             if l.tenGames then sub = sub .. "   10 games" end
@@ -331,6 +380,8 @@ local function RefreshList()
             row.role:SetText(ROLE_TEXT[l.role] or l.role)
             if l.name == me then
                 row.status:SetText("|cff00ff00Your group|r")
+            elseif l.source == "global" then
+                row.status:SetText("|cff80c0ffGlobal ad|r")
             else
                 row.status:SetText(STATUS_TEXT[ns.applied[l.name]] or "")
             end
@@ -468,9 +519,7 @@ local function RefreshGroupView()
     if not me then return end
 
     local c = RAID_CLASS_COLORS[me.class] or { r = 1, g = 1, b = 1 }
-    local raceIcon = ns.GetRaceIcon(me.race)
-    local raceMarkup = raceIcon and ("|TInterface\\Icons\\" .. raceIcon .. ":14:14|t ") or ""
-    w.name:SetText(raceMarkup .. string.format("|cff%02x%02x%02x%s|r",
+    w.name:SetText(FactionRaceMarkup(me.race) .. string.format("|cff%02x%02x%02x%s|r",
         math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255), me.name))
     w.role:SetText(ROLE_TEXT[me.role] or me.role)
     w.title:SetText(ns.ListingTitle(me))
@@ -741,7 +790,8 @@ function ns.BuildUI()
     f:Hide()
     f:SetWidth(880); f:SetHeight(510)
     f:SetPoint("CENTER")
-    f:SetFrameStrata("HIGH")
+    f:SetFrameStrata("DIALOG")
+    f:SetToplevel(true)
     f:SetBackdrop({
         bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
         edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
@@ -790,11 +840,10 @@ function ns.BuildUI()
     listedHeader:SetWidth(80)
     listedHeader:SetJustifyH("RIGHT")
 
-    local refresh = CreateFrame("Button", nil, right)
-    refresh:SetWidth(24); refresh:SetHeight(24)
+    local refresh = CreateFrame("Button", nil, right, "UIPanelButtonTemplate")
+    refresh:SetWidth(64); refresh:SetHeight(22)
     refresh:SetPoint("TOPRIGHT", -10, -8)
-    refresh:SetNormalTexture("Interface\\Buttons\\UI-RefreshButton")
-    refresh:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    refresh:SetText("Refresh")
     refresh:SetScript("OnClick", function()
         local sent, wait = ns.Comm_Request()
         if sent then
@@ -807,8 +856,7 @@ function ns.BuildUI()
     end)
     refresh:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:AddLine("Refresh")
-        GameTooltip:AddLine("Asks other players to announce their groups again.", 1, 1, 1, true)
+        GameTooltip:AddLine("Refresh listings")
         GameTooltip:Show()
     end)
     refresh:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -842,6 +890,7 @@ function ns.BuildUI()
         FauxScrollFrame_OnVerticalScroll(self, offset, ROW_H, RefreshList)
     end)
     f.scroll = sf
+    f.scrollBar = _G["ArenaLFGScrollScrollBar"]
     f.rows = {}
     for i = 1, ROWS do f.rows[i] = BuildRow(right, i) end
 
@@ -853,10 +902,19 @@ function ns.BuildUI()
     f.signup:SetScript("OnClick", function()
         local l = ns.selected and ns.listings[ns.selected]
         if not l then return end
-        if ns.applied[l.name] == "pending" then ns.CancelApply(l) else ns.Apply(l) end
+        if l.source == "global" then
+            InviteUnit(l.name)
+        elseif ns.applied[l.name] == "pending" then
+            ns.CancelApply(l)
+        else
+            ns.Apply(l)
+        end
     end)
 
     f:SetScript("OnShow", function()
+        f:SetFrameStrata("DIALOG")
+        f:SetToplevel(true)
+        f:Raise()
         ns.RequestArenaData()
         UpdateLeft()
         ns.RefreshAll()

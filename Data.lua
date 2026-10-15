@@ -38,6 +38,18 @@ function ns.GetRaceName(race)
     return info and info.label
 end
 
+function ns.GetFaction(race)
+    local token = ns.NormalizeRace(race)
+    if token == "HUMAN" or token == "DWARF" or token == "NIGHTELF"
+        or token == "GNOME" or token == "DRAENEI" then
+        return "Alliance"
+    end
+    if token == "ORC" or token == "UNDEAD" or token == "TAUREN"
+        or token == "TROLL" or token == "BLOODELF" then
+        return "Horde"
+    end
+end
+
 ns.PARTNER_SPECS = {
     { id = "W1", role = "DPS", label = "Arms Warrior", icon = "Ability_Warrior_SavageBlow" },
     { id = "W2", role = "DPS", label = "Fury Warrior", icon = "Ability_Warrior_InnerRage" },
