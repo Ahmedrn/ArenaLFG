@@ -135,6 +135,21 @@ ns.Every(ns.HEARTBEAT, function()
     end
 end)
 
+local function QueueRequestResponse()
+    if requestResponsePending or not (ns.DB and ns.mine.posted) then return end
+
+    requestResponsePending = true
+    local remainingCooldown = lastBroadcastAt
+        and math.max(0, REQUEST_COOLDOWN - (GetTime() - lastBroadcastAt)) or 0
+    ns.After(remainingCooldown + math.random() * 5, function()
+        requestResponsePending = false
+        if ns.DB and ns.mine.posted
+            and (not lastBroadcastAt or GetTime() - lastBroadcastAt >= REQUEST_COOLDOWN) then
+            ns.Broadcast()
+        end
+    end)
+end
+
 local f = CreateFrame("Frame")
 f:RegisterEvent("CHAT_MSG_CHANNEL")
 f:SetScript("OnEvent", function(self, event, msg, sender, lang, channelString)
@@ -144,17 +159,7 @@ f:SetScript("OnEvent", function(self, event, msg, sender, lang, channelString)
         ns.applied[sender] = nil
         ns.RemoveListing(sender)
     elseif msg == "ALreq" then
-        if ns.DB and ns.mine.posted and not requestResponsePending
-            and (not lastBroadcastAt or GetTime() - lastBroadcastAt >= REQUEST_COOLDOWN) then
-            requestResponsePending = true
-            ns.After(math.random() * 5, function()
-                requestResponsePending = false
-                if ns.DB and ns.mine.posted
-                    and (not lastBroadcastAt or GetTime() - lastBroadcastAt >= REQUEST_COOLDOWN) then
-                    ns.Broadcast()
-                end
-            end)
-        end
+        QueueRequestResponse()
     elseif strsub(msg, 1, 4) == "AL1;" then
         local l = ns.Decode(msg, sender)
         if l then ns.AddListing(l) end
