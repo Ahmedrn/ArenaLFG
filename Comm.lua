@@ -8,9 +8,12 @@ local ADDON, ns = ...
 local chanId = 0
 local lower = string.lower
 local REQUEST_COOLDOWN = 10
+local JOIN_MAX_ATTEMPTS = 3
+local JOIN_RETRY_DELAY = 5
 local lastBroadcastAt
 local lastRequestAt
 local requestResponsePending = false
+local joinInProgress = false
 
 local function RefreshChannelId()
     chanId = tonumber((GetChannelName(ns.CHANNEL))) or 0
@@ -23,6 +26,10 @@ function ns.Comm_Status()
     RefreshChannelId()
     ns.Print("Sync channel '" .. ns.CHANNEL .. "' id: " .. tostring(chanId)
         .. (chanId > 0 and " (joined)" or " (NOT joined)"))
+    if chanId <= 0 then
+        ns.Print("Retrying the sync channel join.")
+        ns.Comm_Join()
+    end
 end
 
 local function IsOurChannel(channelString)
@@ -51,35 +58,57 @@ local function Send(text)
     return true
 end
 
-function ns.Comm_Join()
+local function CompleteJoin()
+    joinInProgress = false
+    for i = 1, (NUM_CHAT_WINDOWS or 10) do
+        local cf = _G["ChatFrame" .. i]
+        if cf then ChatFrame_RemoveChannel(cf, ns.CHANNEL) end
+    end
+    ns.Debug("joined sync channel, id " .. chanId)
+    ns.Comm_Request() -- ask others to announce themselves
+    if ns.DB then
+        if ns.InGroup() or ns.InPvpInstance() then
+            if ns.DB.mine.posted then
+                ns.Print("You are grouped or in an arena/battleground, so your saved listing was removed.")
+                ns.RemoveMine()
+            else
+                ns.BroadcastRemove()
+            end
+        elseif ns.DB.mine.posted then
+            ns.AddListing(ns.MyListing())
+            ns.Broadcast()
+        end
+    end
+    ns.Changed() -- refresh the sync status shown in the UI
+end
+
+local function TryJoin(attempt)
+    if RefreshChannelId() > 0 then
+        CompleteJoin()
+        return
+    end
     JoinChannelByName(ns.CHANNEL)
     ns.After(2, function()
-        RefreshChannelId()
-        if chanId > 0 then
-            for i = 1, (NUM_CHAT_WINDOWS or 10) do
-                local cf = _G["ChatFrame" .. i]
-                if cf then ChatFrame_RemoveChannel(cf, ns.CHANNEL) end
-            end
-            ns.Debug("joined sync channel, id " .. chanId)
-            ns.Comm_Request() -- ask others to announce themselves
-            if ns.DB then
-                if ns.InGroup() or ns.InPvpInstance() then
-                    if ns.DB.mine.posted then
-                        ns.Print("You are grouped or in an arena/battleground, so your saved listing was removed.")
-                        ns.RemoveMine()
-                    else
-                        ns.BroadcastRemove()
-                    end
-                elseif ns.DB.mine.posted then
-                    ns.AddListing(ns.MyListing())
-                    ns.Broadcast()
-                end
-            end
-            ns.Changed() -- refresh the sync status shown in the UI
+        if RefreshChannelId() > 0 then
+            CompleteJoin()
+        elseif attempt < JOIN_MAX_ATTEMPTS then
+            ns.After(JOIN_RETRY_DELAY, function() TryJoin(attempt + 1) end)
         else
+            joinInProgress = false
             ns.Print("Could not join the sync channel (listings stay local).")
         end
     end)
+end
+
+function ns.Comm_Join()
+    if RefreshChannelId() > 0 then
+        if not joinInProgress then CompleteJoin() end
+        return
+    end
+    if joinInProgress then return end
+
+    joinInProgress = true
+    TryJoin(1)
 end
 
 function ns.Broadcast()

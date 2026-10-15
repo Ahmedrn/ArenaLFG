@@ -57,7 +57,7 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | `/alfg minimap` | Show or hide the minimap button |
 | `/alfg pvp` | Toggle PvP window integration (enabled by default; also controlled by the main-window checkbox) |
 | `/alfg me` | Print what the addon detects about your character (class, spec, GS, arena teams) |
-| `/alfg comm` | Show the status of the hidden sync channel |
+| `/alfg comm` | Show sync channel status; retry joining if disconnected |
 | `/alfg debug` | Toggle debug messages (sent / received data) |
 | `/alfg clear` | Clear the local list |
 | `/rl` | Reload the UI (shortcut for `/reload`, useful while developing) |
@@ -66,7 +66,7 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 
 3.3.5 addons cannot access the internet, so ArenaLFG syncs through the game itself:
 
-- **Listings** are sent as plain text in a custom channel called `ArenaLFGSync`. The addon joins it automatically, removes it from your chat windows and filters its messages and join/leave notices. The traffic is not private: anyone who joins that channel can see it. Every 60 seconds your listing is re-announced; a listing disappears after about 2.5 minutes without an update. Refresh requests are limited to one every 10 seconds, and posters ignore requests shortly after announcing.
+- **Listings** are sent as plain text in a custom channel called `ArenaLFGSync`. The addon joins it automatically, retrying up to three times if the initial join fails. `/alfg comm` checks the connection and retries if disconnected. The channel is removed from your chat windows and its messages and join/leave notices are filtered. The traffic is not private: anyone who joins that channel can see it. Every 60 seconds your listing is re-announced; a listing disappears after about 2.5 minutes without an update. Refresh requests are limited to one every 10 seconds, and posters ignore requests shortly after announcing.
 - **Sign-ups, invites and declines** are private addon messages sent directly between the two players.
 - ArenaLFG turns the channel messages into listings; players without the addon will only see the raw messages. Alliance and Horde use separate lists, as the game does not allow channel chat across factions.
 
@@ -81,7 +81,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 
 ## Troubleshooting
 
-- **"Could not join the sync channel":** the server may restrict custom channels, or you already have the maximum number of channels. Free a channel slot and `/reload`. Run `/alfg comm` to check.
+- **"Could not join the sync channel":** the server may restrict custom channels, or you already have the maximum number of channels. Free a channel slot, then run `/alfg comm` to retry.
 - **The list stays empty:** the addon is only useful when other players run it too. Ask a friend to install it, post a group, and press the refresh button.
 - **Your 2v2 team is not detected:** run `/alfg me` and check the arena slots it prints. Open the PvP / arena team frame once, then `/reload`.
 - **The addon does not appear in the AddOns list:** check that the folder is named `ArenaLFG` and contains `ArenaLFG.toc` directly (not another folder inside).

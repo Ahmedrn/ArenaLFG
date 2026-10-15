@@ -143,7 +143,7 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg minimap - Show or hide the minimap button.")
         ns.Print("/alfg pvp - Toggle PvP window integration (enabled by default).")
         ns.Print("/alfg me - Show detected character and arena team information.")
-        ns.Print("/alfg comm - Show sync channel status.")
+        ns.Print("/alfg comm - Show sync channel status and retry joining if disconnected.")
         ns.Print("/alfg debug - Toggle debug messages.")
         ns.Print("/alfg clear - Clear the local group list.")
     elseif msg == "clear" then
