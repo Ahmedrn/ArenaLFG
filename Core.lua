@@ -54,6 +54,7 @@ function ns.Every(sec, fn)  table.insert(timers, { left = sec, every = sec, fn =
 ----------------------------------------------------------------------
 local defaults = {
     debug = false,
+    pvpIntegration = true,
     minimap = { angle = 200, hide = false },
     mine = {
         role = "DPS", gs = 0,
@@ -128,6 +129,16 @@ SlashCmdList["ARENALFG"] = function(msg)
     msg = strlower(strtrim(msg or ""))
     if msg == "" then
         ns.ToggleUI()
+    elseif msg == "help" then
+        ns.Print("ArenaLFG commands:")
+        ns.Print("/alfg or /arenalfg - Toggle the ArenaLFG window.")
+        ns.Print("/alfg help - Show this command list.")
+        ns.Print("/alfg minimap - Show or hide the minimap button.")
+        ns.Print("/alfg pvp - Toggle PvP window integration (enabled by default).")
+        ns.Print("/alfg me - Show detected character and arena team information.")
+        ns.Print("/alfg comm - Show sync channel status.")
+        ns.Print("/alfg debug - Toggle debug messages.")
+        ns.Print("/alfg clear - Clear the local group list.")
     elseif msg == "clear" then
         wipe(ns.listings)
         ns.Changed()
@@ -150,8 +161,11 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.DB.minimap.hide = not ns.DB.minimap.hide
         ns.UpdateMinimapButton()
         ns.Print("Minimap button " .. (ns.DB.minimap.hide and "hidden" or "shown"))
+    elseif msg == "pvp" then
+        ns.SetPVPIntegration(not ns.DB.pvpIntegration)
+        ns.Print("PvP window integration " .. (ns.DB.pvpIntegration and "enabled" or "disabled") .. ".")
     else
-        ns.Print("/alfg (toggle) | clear | debug | me | comm | minimap")
+        ns.Print("Unknown command. Type /alfg help to see available commands.")
     end
 end
 

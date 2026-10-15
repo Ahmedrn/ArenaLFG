@@ -708,7 +708,7 @@ end
 function ns.BuildUI()
     local f = CreateFrame("Frame", "ArenaLFGFrame", UIParent)
     f:Hide()
-    f:SetWidth(780); f:SetHeight(480)
+    f:SetWidth(780); f:SetHeight(510)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
     f:SetBackdrop({
@@ -749,6 +749,12 @@ function ns.BuildUI()
     f.right = right
 
     MakeLabel(right, "Arena 2v2 groups", 12, -12)
+    f.pvpCheck = MakeCheck(f, "Open with PvP window", function(enabled)
+        ns.SetPVPIntegration(enabled)
+    end)
+    f.pvpCheck:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 24, 16)
+    f.pvpCheck:SetChecked(ns.DB.pvpIntegration)
+
     local listedHeader = MakeLabel(right, "Listed", 216, -55, "GameFontDisableSmall")
     listedHeader:SetWidth(80)
     listedHeader:SetJustifyH("RIGHT")
@@ -867,15 +873,38 @@ function ns.ShowUIAtPVP()
 end
 
 local pvpToggleHooked, pvpDetailsHooked = false, false
+local pvpOpenedArenaLFG = false
+
+function ns.SetPVPIntegration(enabled)
+    ns.DB.pvpIntegration = enabled and true or false
+    if ns.frame and ns.frame.pvpCheck then
+        ns.frame.pvpCheck:SetChecked(ns.DB.pvpIntegration)
+    end
+    if ns.DB.pvpIntegration then
+        local anchor = PVPParentFrame
+        if not anchor or not anchor:IsVisible() then anchor = PVPFrame end
+        if anchor and anchor:IsVisible() then
+            ns.ShowUIAtPVP()
+            pvpOpenedArenaLFG = ns.frame and ns.frame:IsShown() or false
+        end
+    elseif pvpOpenedArenaLFG and ns.frame then
+        ns.frame:Hide()
+        pvpOpenedArenaLFG = false
+    end
+end
+
 local function InstallPVPFrameHooks()
     if not pvpToggleHooked and type(TogglePVPFrame) == "function" then
         hooksecurefunc("TogglePVPFrame", function()
+            if not (ns.DB and ns.DB.pvpIntegration) then return end
             local anchor = PVPParentFrame
             if not anchor or not anchor:IsVisible() then anchor = PVPFrame end
             if anchor and anchor:IsVisible() then
                 ns.ShowUIAtPVP()
-            elseif ns.frame then
+                pvpOpenedArenaLFG = ns.frame and ns.frame:IsShown() or false
+            elseif pvpOpenedArenaLFG and ns.frame then
                 ns.frame:Hide()
+                pvpOpenedArenaLFG = false
             end
         end)
         pvpToggleHooked = true
@@ -883,7 +912,7 @@ local function InstallPVPFrameHooks()
 
     if not pvpDetailsHooked and PVPTeamDetails then
         hooksecurefunc(PVPTeamDetails, "Show", function(details)
-            if not ns.frame or not ns.frame:IsShown() then return end
+            if not (ns.DB and ns.DB.pvpIntegration) or not ns.frame or not ns.frame:IsShown() then return end
             details:SetFrameStrata(ns.frame:GetFrameStrata())
             details:SetFrameLevel(math.max(details:GetFrameLevel(), ns.frame:GetFrameLevel() + 1))
         end)

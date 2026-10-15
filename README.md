@@ -16,7 +16,7 @@ Stop scrolling through global chat: see who is looking for a 2v2 partner, sign u
 - **Preferred partner specs:** choose a role, then select one or more specs or choose **Any spec** (for example, Healer → Holy Paladin and Restoration Druid, or any Healer); their icons or role preference appear in the displayed group title.
 - **Auto-detection**: your class, spec, 2v2 team and team rating are read from the game. Spec icons appear on your group card and in browser listings. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
 - **Roles:** DPS, Healer, Tank. Your role is automatically detected from your class and primary talent tree and shown in your listing.
-- **PvP UI integration:** press **H** or click the **Player vs. Player** micro menu button to open ArenaLFG beside the PvP window. The minimap button and `/alfg` also open it.
+- **PvP UI integration:** enabled by default; ArenaLFG opens beside the PvP window when you open it. Use the main-window checkbox or `/alfg pvp` to toggle the integration. The minimap button and `/alfg` always open ArenaLFG manually.
 - **Clean chat:** sync traffic is filtered from your chat windows, though the plain-text channel messages are visible to anyone who joins the channel.
 
 ## Installation
@@ -34,7 +34,7 @@ The folder must be named exactly `ArenaLFG`.
 
 | Action | How |
 | --- | --- |
-| Open / close the window | Press **H** or click **Player vs. Player** to open beside the PvP window; click the minimap button or type `/alfg` to toggle |
+| Open / close the window | Click the minimap button or type `/alfg` to toggle; PvP integration opens it beside the PvP window by default |
 | List your group | Left panel, fill the form, press **List Group** |
 | Edit or remove your group | **Edit** / **Delist My Group** (also in the right-click menu on your row) |
 | Sign up to a group | Click a group in the list, then **Sign Up** |
@@ -53,7 +53,9 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | Command | Description |
 | --- | --- |
 | `/alfg` or `/arenalfg` | Toggle the window |
+| `/alfg help` | Show available commands and what they do |
 | `/alfg minimap` | Show or hide the minimap button |
+| `/alfg pvp` | Toggle PvP window integration (enabled by default; also controlled by the main-window checkbox) |
 | `/alfg me` | Print what the addon detects about your character (class, spec, GS, arena teams) |
 | `/alfg comm` | Show the status of the hidden sync channel |
 | `/alfg debug` | Toggle debug messages (sent / received data) |
