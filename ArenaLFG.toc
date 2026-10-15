@@ -15,6 +15,7 @@
 Core.lua
 Data.lua
 Listings.lua
+GlobalParser.lua
 Comm.lua
 Minimap.lua
 UI.lua

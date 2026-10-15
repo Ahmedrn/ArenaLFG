@@ -79,7 +79,7 @@ end
 
 function ns.AddListing(l)
     local previous = ns.listings[l.name]
-    l.listedAt = previous and previous.listedAt or GetTime()
+    l.listedAt = previous and previous.source == l.source and previous.listedAt or GetTime()
     l.seen = GetTime()
     ns.listings[l.name] = l
     ns.Changed()
@@ -116,7 +116,7 @@ end
 ns.Every(5, function()
     local now, removed = GetTime(), false
     for name, l in pairs(ns.listings) do
-        if (now - l.seen) > ns.EXPIRE then
+        if (now - l.seen) > (l.source == "global" and 120 or ns.EXPIRE) then
             ns.listings[name] = nil
             ns.applied[name] = nil
             removed = true
@@ -138,12 +138,12 @@ function ns.GetSorted()
     local f, out = ns.DB.filters, {}
     for _, l in pairs(ns.listings) do
         local ok = true
-        if f.role ~= "Any" and l.role ~= f.role then ok = false end
-        if f.team == "Has team" and not l.hasTeam then ok = false end
-        if f.team == "No team" and l.hasTeam then ok = false end
-        if f.seasonal == "Seasonal" and not l.seasonal then ok = false end
-        if f.seasonal == "Non-seasonal" and l.seasonal then ok = false end
-        if f.tenGames and not l.tenGames then ok = false end
+        if f.role ~= "Any" and l.role ~= "Unknown" and l.role ~= f.role then ok = false end
+        if f.team == "Has team" and l.teamKnown ~= false and not l.hasTeam then ok = false end
+        if f.team == "No team" and l.teamKnown ~= false and l.hasTeam then ok = false end
+        if f.seasonal == "Seasonal" and l.seasonal == false then ok = false end
+        if f.seasonal == "Non-seasonal" and l.seasonal == true then ok = false end
+        if f.tenGames and l.tenGames == false then ok = false end
         if ok and ns.search and ns.search ~= "" then
             local partnerSpecs = table.concat(ns.GetPartnerSpecNames(l), " ")
             local hay = strlower(l.name .. " " .. l.spec .. " " .. (l.note or "") .. " "

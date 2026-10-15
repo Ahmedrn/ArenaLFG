@@ -147,6 +147,7 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg pvp - Toggle PvP window integration (enabled by default).")
         ns.Print("/alfg me - Show detected character and arena team information.")
         ns.Print("/alfg comm - Show sync channel status and retry joining if disconnected.")
+        ns.Print("/alfg global - Show Global chat parser load status.")
         ns.Print("/alfg debug - Toggle debug messages.")
         ns.Print("/alfg clear - Clear the local group list.")
     elseif msg == "clear" then
@@ -167,6 +168,10 @@ SlashCmdList["ARENALFG"] = function(msg)
         end
     elseif msg == "comm" then
         ns.Comm_Status()
+    elseif msg == "global" then
+        local globalChannelId = tonumber(GetChannelName("Global")) or 0
+        ns.Print("Global chat parser " .. (ns.GlobalParserLoaded and "loaded" or "NOT loaded")
+            .. "; Global channel id: " .. globalChannelId .. ".")
     elseif msg == "minimap" then
         ns.DB.minimap.hide = not ns.DB.minimap.hide
         ns.UpdateMinimapButton()
