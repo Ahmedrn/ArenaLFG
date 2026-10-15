@@ -86,39 +86,42 @@ ev:SetScript("OnEvent", function(self, event, arg1)
         ArenaLFGDB = ArenaLFGDB or {}
         local legacyMine = ArenaLFGDB.mine
         CopyDefaults(defaults, ArenaLFGDB)
+        ns.DB = ArenaLFGDB
 
         local realm, player = GetRealmName(), UnitName("player")
+        local mine
         if not realm or realm == "" or not player or player == "" then
             ns.Print("Could not load character-specific settings: character or realm name is unavailable.")
-            return
-        end
-
-        ArenaLFGDB.characters[realm] = ArenaLFGDB.characters[realm] or {}
-        local realmCharacters = ArenaLFGDB.characters[realm]
-        if not ArenaLFGDB.characterProfilesMigrated then
-            realmCharacters[player] = realmCharacters[player] or {}
-            if type(legacyMine) == "table" then
-                realmCharacters[player].mine = legacyMine
+            mine = type(legacyMine) == "table" and legacyMine or {}
+        else
+            ArenaLFGDB.characters[realm] = ArenaLFGDB.characters[realm] or {}
+            local realmCharacters = ArenaLFGDB.characters[realm]
+            if not ArenaLFGDB.characterProfilesMigrated then
+                realmCharacters[player] = realmCharacters[player] or {}
+                if type(legacyMine) == "table" then
+                    realmCharacters[player].mine = legacyMine
+                end
+                ArenaLFGDB.characterProfilesMigrated = true
             end
-            ArenaLFGDB.characterProfilesMigrated = true
+            realmCharacters[player] = realmCharacters[player] or {}
+            realmCharacters[player].mine = realmCharacters[player].mine or {}
+            mine = realmCharacters[player].mine
         end
-        realmCharacters[player] = realmCharacters[player] or {}
-        realmCharacters[player].mine = realmCharacters[player].mine or {}
-        CopyDefaults(defaults.mine, realmCharacters[player].mine)
 
-        ns.DB = ArenaLFGDB
-        ns.DB.mine = realmCharacters[player].mine
-        local postedAt = tonumber(ns.DB.mine.postedAt)
+        CopyDefaults(defaults.mine, mine)
+        ns.mine = mine
+        ArenaLFGDB.mine = nil
+        local postedAt = tonumber(ns.mine.postedAt)
         local listingAge = postedAt and (time() - postedAt)
-        if ns.DB.mine.posted and (not listingAge or listingAge < 0 or listingAge > ns.LISTING_RESUME_WINDOW) then
-            ns.DB.mine.posted = false
-            ns.DB.mine.postedAt = nil
+        if ns.mine.posted and (not listingAge or listingAge < 0 or listingAge > ns.LISTING_RESUME_WINDOW) then
+            ns.mine.posted = false
+            ns.mine.postedAt = nil
         end
-        ns.DB.mine.roleManual = nil
+        ns.mine.roleManual = nil
         ns.DEBUG = ns.DB.debug
         local okRole = false
-        for _, r in ipairs(ns.ROLES) do if r == ns.DB.mine.role then okRole = true end end
-        if not okRole then ns.DB.mine.role = "DPS" end
+        for _, r in ipairs(ns.ROLES) do if r == ns.mine.role then okRole = true end end
+        if not okRole then ns.mine.role = "DPS" end
         ns.BuildMinimapButton()
     elseif event == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
@@ -198,7 +201,7 @@ gf:SetScript("OnEvent", function()
     local inPvpInstance = ns.InPvpInstance()
     if not grouped and not inPvpInstance then return end
 
-    if ns.DB.mine.posted then
+    if ns.mine.posted then
         ns.Print(grouped and "You are in a group now, your listing was removed."
             or "You entered an arena or battleground, your listing was removed.")
         ns.RemoveMine()

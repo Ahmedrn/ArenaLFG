@@ -68,13 +68,13 @@ local function CompleteJoin()
     ns.Comm_Request() -- ask others to announce themselves
     if ns.DB then
         if ns.InGroup() or ns.InPvpInstance() then
-            if ns.DB.mine.posted then
+            if ns.mine.posted then
                 ns.Print("You are grouped or in an arena/battleground, so your saved listing was removed.")
                 ns.RemoveMine()
             else
                 ns.BroadcastRemove()
             end
-        elseif ns.DB.mine.posted then
+        elseif ns.mine.posted then
             ns.AddListing(ns.MyListing())
             ns.Broadcast()
         end
@@ -117,7 +117,7 @@ function ns.Broadcast()
     local ok, sent = pcall(Send, ns.Encode(l))
     if ok and sent then
         lastBroadcastAt = GetTime()
-        ns.DB.mine.postedAt = time()
+        ns.mine.postedAt = time()
     end
     ns.Debug("sent listing: " .. tostring(ok and sent))
 end
@@ -128,7 +128,7 @@ end
 
 -- Heartbeat: re-announce your own listing so it does not expire
 ns.Every(ns.HEARTBEAT, function()
-    if ns.DB and ns.DB.mine.posted then
+    if ns.DB and ns.mine.posted then
         local l = ns.MyListing()
         if l then ns.AddListing(l) end
         ns.Broadcast()
@@ -144,12 +144,12 @@ f:SetScript("OnEvent", function(self, event, msg, sender, lang, channelString)
         ns.applied[sender] = nil
         ns.RemoveListing(sender)
     elseif msg == "ALreq" then
-        if ns.DB and ns.DB.mine.posted and not requestResponsePending
+        if ns.DB and ns.mine.posted and not requestResponsePending
             and (not lastBroadcastAt or GetTime() - lastBroadcastAt >= REQUEST_COOLDOWN) then
             requestResponsePending = true
             ns.After(math.random() * 5, function()
                 requestResponsePending = false
-                if ns.DB and ns.DB.mine.posted
+                if ns.DB and ns.mine.posted
                     and (not lastBroadcastAt or GetTime() - lastBroadcastAt >= REQUEST_COOLDOWN) then
                     ns.Broadcast()
                 end
@@ -164,7 +164,9 @@ end)
 -- Ask everyone to re-announce their listing (refresh button)
 function ns.Comm_Request()
     local now = GetTime()
-    if lastRequestAt and now - lastRequestAt < REQUEST_COOLDOWN then return false end
+    if lastRequestAt and now - lastRequestAt < REQUEST_COOLDOWN then
+        return false, math.ceil(REQUEST_COOLDOWN - (now - lastRequestAt))
+    end
     local ok, sent = pcall(Send, "ALreq")
     if not ok or not sent then return false end
     lastRequestAt = now
@@ -178,7 +180,7 @@ af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
     if prefix ~= ns.PREFIX or not msg or sender == UnitName("player") then return end
     ns.Debug("whisper from " .. tostring(sender) .. ": " .. msg)
     if strsub(msg, 1, 3) == "AP;" then
-        if not (ns.DB and ns.DB.mine.posted) then return end
+        if not (ns.DB and ns.mine and ns.mine.posted) then return end
         local l = ns.Decode(strsub(msg, 4), sender)
         if l then
             ns.AddApplicant(l)

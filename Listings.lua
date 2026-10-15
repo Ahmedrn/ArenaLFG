@@ -93,7 +93,7 @@ end
 
 -- Your own data as a listing table (also used when you sign up to someone else's group)
 function ns.BuildMine()
-    local m = ns.DB.mine
+    local m = ns.mine
     ns.DetectMine() -- team rating / GS may have changed
     return {
         name = UnitName("player"), class = ns.GetMyClass(), spec = ns.GetMySpec(),
@@ -108,7 +108,7 @@ end
 
 -- Your own listing (nil if not posted)
 function ns.MyListing()
-    if not ns.DB.mine.posted then return nil end
+    if not ns.mine.posted then return nil end
     return ns.BuildMine()
 end
 
@@ -147,7 +147,7 @@ function ns.GetSorted()
         if ok and ns.search and ns.search ~= "" then
             local partnerSpecs = table.concat(ns.GetPartnerSpecNames(l), " ")
             local hay = strlower(l.name .. " " .. l.spec .. " " .. (l.note or "") .. " "
-                .. l.class .. " " .. partnerSpecs .. " " .. (ns.PartnerPreference(l) or ""))
+                .. l.class .. " " .. partnerSpecs)
             if not hay:find(ns.search, 1, true) then ok = false end
         end
         if ok then out[#out + 1] = l end

@@ -509,7 +509,7 @@ end)
 local function BuildFormView(parent, f)
     local p = CreateFrame("Frame", nil, parent)
     p:SetAllPoints(parent)
-    local m = ns.DB.mine
+    local m = ns.mine
     local w = {}
     f.mineWidgets = w
 
@@ -609,7 +609,7 @@ end
 function ns.UI_LoadMine()
     local f = ns.frame
     if not f then return end
-    local m, w = ns.DB.mine, f.mineWidgets
+    local m, w = ns.mine, f.mineWidgets
     local info = ns.DetectMine()
 
     local c = RAID_CLASS_COLORS[ns.GetMyClass()] or { r = 1, g = 1, b = 1 }
@@ -644,7 +644,7 @@ end
 function ns.SaveMine()
     local f = ns.frame
     if not f then return end
-    local m, w = ns.DB.mine, f.mineWidgets
+    local m, w = ns.mine, f.mineWidgets
     m.gs = tonumber(w.gs:GetText()) or 0
     m.note = (w.note:GetText():gsub("|", "/"))
 end
@@ -656,7 +656,7 @@ end
 function UpdateLeft()
     local f = ns.frame
     if not f then return end
-    if ns.DB.mine.posted and not f.editing then
+    if ns.mine.posted and not f.editing then
         f.mine:Hide()
         f.groupView:Show()
         RefreshGroupView()
@@ -673,13 +673,13 @@ function ns.PostMine()
         return
     end
     ns.SaveMine()
-    if ns.DB.mine.targetRole ~= "Any" and not ns.DB.mine.targetAny
-        and #ns.GetPartnerSpecNames(ns.DB.mine) == 0 then
+    if ns.mine.targetRole ~= "Any" and not ns.mine.targetAny
+        and #ns.GetPartnerSpecNames(ns.mine) == 0 then
         ns.Print("Select at least one preferred partner spec, choose Any spec, or set Seeking to Any.")
         return
     end
-    ns.DB.mine.posted = true
-    ns.DB.mine.postedAt = time()
+    ns.mine.posted = true
+    ns.mine.postedAt = time()
     ns.frame.editing = false
     ns.AddListing(ns.MyListing())
     UpdateLeft()          -- update the UI first, so a sync problem can never leave it stale
@@ -694,8 +694,8 @@ function ns.EditMine()
 end
 
 function ns.RemoveMine()
-    ns.DB.mine.posted = false
-    ns.DB.mine.postedAt = nil
+    ns.mine.posted = false
+    ns.mine.postedAt = nil
     for name in pairs(ns.applicants) do
         pcall(SendAddonMessage, ns.PREFIX, "DEC", "WHISPER", name)
     end
@@ -770,7 +770,16 @@ function ns.BuildUI()
     refresh:SetPoint("TOPRIGHT", -10, -8)
     refresh:SetNormalTexture("Interface\\Buttons\\UI-RefreshButton")
     refresh:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-    refresh:SetScript("OnClick", function() ns.Comm_Request(); ns.RefreshAll() end)
+    refresh:SetScript("OnClick", function()
+        local sent, wait = ns.Comm_Request()
+        if sent then
+            ns.RefreshAll()
+        elseif wait then
+            ns.Print("Please wait " .. wait .. " seconds before refreshing again.")
+        else
+            ns.Print("Not connected to the sync channel. Run /alfg comm to retry joining.")
+        end
+    end)
     refresh:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine("Refresh")

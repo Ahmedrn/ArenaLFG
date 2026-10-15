@@ -40,7 +40,7 @@ The folder must be named exactly `ArenaLFG`.
 | Sign up to a group | Click a group in the list, then **Sign Up** |
 | Cancel a sign-up | Select the group, press **Cancel Sign-Up** |
 | Invite an applicant | Press **Invite** next to their name (sends a normal party invite) |
-| Refresh the list | The refresh button asks other players to announce their groups again |
+| Refresh the list | The refresh button asks other players to announce their groups again; if it is still on cooldown, the remaining wait is shown in chat |
 
 Listings expire automatically if the poster goes offline. Pending sign-ups clear when that leader's listing expires, and unhandled applicants expire after about 2.5 minutes. Your listing can restore after a quick reload, but a saved listing older than five minutes is cleared on login. A saved listing is also removed when you are grouped or enter an arena or battleground.
 

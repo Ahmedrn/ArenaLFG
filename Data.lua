@@ -220,11 +220,11 @@ f:SetScript("OnEvent", function()
     local editing = ns.frame and ns.frame.mine and ns.frame.mine:IsShown()
     if editing then ns.SaveMine() end
 
-    local oldRole = ns.DB.mine.role
+    local oldRole = ns.mine.role
     ns.DetectMine()
     if editing then ns.UI_LoadMine() end
 
-    if ns.DB.mine.posted and oldRole ~= ns.DB.mine.role then
+    if ns.mine.posted and oldRole ~= ns.mine.role then
         ns.AddListing(ns.MyListing())
         ns.Broadcast()
     end
@@ -232,7 +232,7 @@ end)
 
 -- Pull what the game can tell us. The 2v2 team is authoritative: no team = no team.
 function ns.DetectMine()
-    local m, info = ns.DB.mine, {}
+    local m, info = ns.mine, {}
     m.role = ns.GetSuggestedRole() or "DPS"
     local gs = ns.GetMyGearScore()
     if gs then m.gs = gs; info.gs = true end
