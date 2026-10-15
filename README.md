@@ -1,7 +1,6 @@
 # ArenaLFG
 
-**A 2v2 arena partner finder for WoW 3.3.5a (WotLK).**
-Stop scrolling through global chat: see who is looking for a 2v2 partner, sign up with one click, or list your own group, in a window modeled on the Premade Groups finder from modern WoW.
+**A 2v2 arena partner finder for WoW 3.3.5a (WotLK).** Stop scrolling through global chat: see who is looking for a 2v2 partner, sign up with one click, or list your own group, in a window modeled on the Premade Groups finder from modern WoW.
 
 > Built for Warmane (Blackrock) but should work on any 3.3.5a server that allows custom chat channels.
 
@@ -9,15 +8,15 @@ Stop scrolling through global chat: see who is looking for a 2v2 partner, sign u
 
 ## Features
 
-- **Group browser** with class-colored player names, race icons to identify faction, specialization icons, listing age, search and filters: role, team / no team, seasonal / non-seasonal, "10 games only".
+- **Group browser** with class-colored player names, race icons to help identify faction, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only".
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
-- **List your group** with role, gearscore, experience tier, a group title that can describe your preferred composition (for example, "Holy Paladin or Resto Druid"), and flags (seasonal character, 10 games for arena points). Listing settings are saved separately for each character.
+- **List your group** with role, gearscore, experience tier, preferred partner specs, a short title and flags (seasonal character, 10 games for arena points). The listed-group card mirrors the browser listing and shows your race, class-colored name, role, title, team details and listing age. Settings are saved separately for each character.
 - **Preferred partner specs:** choose a role, then select one or more specs or choose **Any spec** (for example, Healer → Holy Paladin and Restoration Druid, or any Healer); their icons or role preference appear in the displayed group title.
-- **Auto-detection**: your class, spec, 2v2 team and team rating are read from the game. Spec icons appear on your group card and in browser listings. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
+- **Auto-detection**: your class, race, spec, 2v2 team and team rating are read from the game. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
 - **Roles:** DPS, Healer, Tank. Your role is automatically detected from your class and primary talent tree and shown in your listing.
-- **PvP UI integration:** enabled by default; ArenaLFG opens beside the PvP window when you open it. Use the main-window checkbox or `/alfg pvp` to toggle the integration. The minimap button and `/alfg` always open ArenaLFG manually.
-- **Clean chat:** sync traffic is filtered from your chat windows, though the plain-text channel messages are visible to anyone who joins the channel.
+- **PvP UI integration:** enabled by default; ArenaLFG opens beside the PvP window when you open it (H is the default WoW PvP keybinding). Use the main-window checkbox or `/alfg pvp` to toggle the integration. The minimap button and `/alfg` always open ArenaLFG manually.
+- **Clean chat:** sync traffic is filtered from your chat windows. Listing data is sent as plain text, so anyone who joins the sync channel can read it.
 
 ## Installation
 
@@ -34,7 +33,7 @@ The folder must be named exactly `ArenaLFG`.
 
 | Action | How |
 | --- | --- |
-| Open / close the window | Click the minimap button or type `/alfg` to toggle; PvP integration opens it beside the PvP window by default |
+| Open / close the window | Click the minimap button or type `/alfg` to toggle; open the PvP window (H by default) to open ArenaLFG beside it |
 | List your group | Left panel, fill the form, press **List Group** |
 | Edit or remove your group | **Edit** / **Delist My Group** (also in the right-click menu on your row) |
 | Sign up to a group | Click a group in the list, then **Sign Up** |
@@ -60,15 +59,14 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | `/alfg comm` | Show sync channel status; retry joining if disconnected |
 | `/alfg debug` | Toggle debug messages (sent / received data) |
 | `/alfg clear` | Clear the local list |
-| `/rl` | Reload the UI (shortcut for `/reload`, useful while developing) |
 
 ## How it works
 
 3.3.5 addons cannot access the internet, so ArenaLFG syncs through the game itself:
 
-- **Listings** are sent as plain text in a custom channel called `ArenaLFGSync`. The addon joins it automatically, retrying up to three times if the initial join fails. `/alfg comm` checks the connection and retries if disconnected. The channel is removed from your chat windows and its messages and join/leave notices are filtered. The traffic is not private: anyone who joins that channel can see it. Every 60 seconds your listing is re-announced; a listing disappears after about 2.5 minutes without an update. Refresh requests are limited to one every 10 seconds; posters defer responses until their broadcast cooldown ends and add a short random delay.
+- **Listings** are sent as plain text in a custom channel called `ArenaLFGSync`. The addon joins it automatically, retrying up to three times if the initial join fails. `/alfg comm` checks the connection and retries if disconnected. The channel is removed from your chat windows and its messages and join/leave notices are filtered. The traffic is not private: anyone who joins that channel can see it. Every 60 seconds your listing is re-announced; a listing disappears after about 2.5 minutes without an update. Refresh requests are limited to one every 10 seconds; posters queue responses until their broadcast cooldown ends, then add a short random delay to spread out replies.
 - **Sign-ups, invites and declines** are private addon messages sent directly between the two players.
-- ArenaLFG turns the channel messages into listings; players without the addon will only see the raw messages. Alliance and Horde use separate lists, as the game does not allow channel chat across factions.
+- ArenaLFG turns the channel messages into listings. Players without the addon who join the channel can read the raw messages. Alliance and Horde use separate lists, as the game does not allow channel chat across factions.
 
 ### Privacy
 
@@ -81,7 +79,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 
 ## Troubleshooting
 
-- **"Could not join the sync channel":** the server may restrict custom channels, or you already have the maximum number of channels. Free a channel slot, then run `/alfg comm` to retry.
+- **"Could not join the sync channel":** the server may restrict custom channels, or you already have the maximum number of channels. Free a channel slot, then run `/alfg comm` to retry joining.
 - **The list stays empty:** the addon is only useful when other players run it too. Ask a friend to install it, post a group, and press the refresh button.
 - **Your 2v2 team is not detected:** run `/alfg me` and check the arena slots it prints. Open the PvP / arena team frame once, then `/reload`.
 - **The addon does not appear in the AddOns list:** check that the folder is named `ArenaLFG` and contains `ArenaLFG.toc` directly (not another folder inside).
@@ -89,9 +87,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 
 ## Known limitations
 
-- Early version: expect rough edges. Please report them.
 - Visible listings depend on how many players run the addon.
-- The first player to join the `ArenaLFGSync` custom channel becomes its owner and may set a password or kick other members, which can interrupt synchronization.
 - Gearscore is self-reported (or read from your GearScore addon), so it can be edited by the player.
 - Solo-queue style teams reported by the server are ignored; only real 2v2 teams count.
 
