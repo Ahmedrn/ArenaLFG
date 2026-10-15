@@ -153,7 +153,12 @@ function ns.GetSorted()
         if ok then out[#out + 1] = l end
     end
     table.sort(out, function(a, c)
-        if a.teamRating ~= c.teamRating then return a.teamRating > c.teamRating end
+        local aIsGlobal = a.source == "global"
+        local cIsGlobal = c.source == "global"
+        if aIsGlobal ~= cIsGlobal then return not aIsGlobal end
+        local aPostedAt = a.listedAt or a.seen or 0
+        local cPostedAt = c.listedAt or c.seen or 0
+        if aPostedAt ~= cPostedAt then return aPostedAt > cPostedAt end
         return a.name < c.name
     end)
     return out
