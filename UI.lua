@@ -384,7 +384,7 @@ local function BuildGroupView(parent, f)
 
     local ban = CreateFrame("Frame", nil, g)
     ban:SetPoint("TOPLEFT", 8, -8)
-    ban:SetWidth(276); ban:SetHeight(76)
+    ban:SetWidth(276); ban:SetHeight(92)
     ban:SetBackdrop({
         bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -393,21 +393,29 @@ local function BuildGroupView(parent, f)
     })
     ban:SetBackdropColor(0.2, 0.12, 0, 0.9)
 
-    w.title = ban:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    w.title:SetPoint("TOPLEFT", 8, -8); w.title:SetWidth(222); w.title:SetHeight(28)
-    w.title:SetJustifyH("LEFT"); w.title:SetJustifyV("TOP")
+    w.name = ban:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    w.name:SetPoint("TOPLEFT", 8, -8); w.name:SetWidth(164); w.name:SetHeight(14)
+    w.name:SetJustifyH("LEFT")
+    w.role = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    w.role:SetPoint("TOPRIGHT", -38, -9); w.role:SetWidth(52); w.role:SetHeight(12)
+    w.role:SetJustifyH("RIGHT")
+    w.title = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    w.title:SetPoint("TOPLEFT", 8, -27); w.title:SetWidth(258); w.title:SetHeight(14)
+    w.title:SetJustifyH("LEFT")
     w.sub = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    w.sub:SetPoint("TOPLEFT", 8, -40); w.sub:SetWidth(260); w.sub:SetJustifyH("LEFT")
+    w.sub:SetPoint("TOPLEFT", 8, -46); w.sub:SetWidth(260); w.sub:SetHeight(12)
+    w.sub:SetJustifyH("LEFT")
     w.info = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    w.info:SetPoint("TOPLEFT", 8, -55); w.info:SetWidth(260); w.info:SetJustifyH("LEFT")
+    w.info:SetPoint("TOPLEFT", 8, -62); w.info:SetWidth(260); w.info:SetHeight(12)
+    w.info:SetJustifyH("LEFT")
     w.icon = ban:CreateTexture(nil, "ARTWORK")
-    w.icon:SetWidth(30); w.icon:SetHeight(30)
+    w.icon:SetWidth(24); w.icon:SetHeight(24)
     w.icon:SetPoint("TOPRIGHT", -8, -8)
 
     -- column headers
     local function Col(text, x)
         local fs = g:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-        fs:SetPoint("TOPLEFT", x, -92); fs:SetText(text)
+        fs:SetPoint("TOPLEFT", x, -108); fs:SetText(text)
     end
     Col("Name", 14); Col("Role", 112); Col("GS", 164)
 
@@ -415,7 +423,7 @@ local function BuildGroupView(parent, f)
     for i = 1, APP_ROWS do
         local r = CreateFrame("Frame", nil, g)
         r:SetWidth(276); r:SetHeight(APP_H)
-        r:SetPoint("TOPLEFT", g, "TOPLEFT", 8, -108 - (i - 1) * APP_H)
+        r:SetPoint("TOPLEFT", g, "TOPLEFT", 8, -124 - (i - 1) * APP_H)
         local function FS(x, width)
             local fs = r:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
             fs:SetPoint("LEFT", x, 0); fs:SetWidth(width); fs:SetHeight(12)
@@ -436,7 +444,7 @@ local function BuildGroupView(parent, f)
     end
 
     w.empty = g:CreateFontString(nil, "ARTWORK", "GameFontDisable")
-    w.empty:SetPoint("TOP", g, "TOP", 0, -150)
+    w.empty:SetPoint("TOP", g, "TOP", 0, -166)
     w.empty:SetText("No sign-ups yet.")
 
     w.sync = g:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
@@ -459,12 +467,26 @@ local function RefreshGroupView()
     local me = ns.MyListing()
     if not me then return end
 
+    local c = RAID_CLASS_COLORS[me.class] or { r = 1, g = 1, b = 1 }
+    local raceIcon = ns.GetRaceIcon(me.race)
+    local raceMarkup = raceIcon and ("|TInterface\\Icons\\" .. raceIcon .. ":14:14|t ") or ""
+    w.name:SetText(raceMarkup .. string.format("|cff%02x%02x%02x%s|r",
+        math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255), me.name))
+    w.role:SetText(ROLE_TEXT[me.role] or me.role)
     w.title:SetText(ns.ListingTitle(me))
-    w.sub:SetText("Arena (2v2)   " .. (ns.TIERS[me.tier] or ""))
-    local info = (me.hasTeam and ("Team " .. me.teamRating) or "No team") .. "   GS " .. (me.gs > 0 and me.gs or "-")
-    if me.seasonal then info = info .. "   Seasonal" end
-    if me.tenGames then info = info .. "   10 games" end
-    w.info:SetText(info)
+    w.sub:SetText("Exp: " .. (ns.TIERS[me.tier] or "?")
+        .. "   " .. (me.hasTeam and ("Team " .. me.teamRating) or "No team"))
+    local info = {}
+    info[#info + 1] = "GS " .. (me.gs > 0 and me.gs or "-")
+    if me.seasonal then info[#info + 1] = "Seasonal" end
+    if me.tenGames then info[#info + 1] = "10 games" end
+    local ownListing = ns.listings[me.name]
+    local listedAt = ownListing and ownListing.listedAt
+    local age = listedAt and math.max(0, GetTime() - listedAt) or 0
+    local minutes = math.floor(age / 60)
+    info[#info + 1] = minutes == 0 and "just now"
+        or (minutes == 1 and "1 min ago" or minutes .. " min ago")
+    w.info:SetText(table.concat(info, "   "))
     SetSpecIcon(w.icon, me.class)
 
     local list = {}
@@ -500,7 +522,10 @@ function ns.RefreshAll()
 end
 
 ns.Every(60, function()
-    if ns.frame and ns.frame:IsShown() then RefreshList() end
+    if ns.frame and ns.frame:IsShown() then
+        RefreshList()
+        RefreshGroupView()
+    end
 end)
 
 ----------------------------------------------------------------------
