@@ -314,7 +314,8 @@ local function RefreshList()
             row.title:SetText(string.format("|cff%02x%02x%02x%s|r  %s",
                 math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255),
                 l.name, ns.ListingTitle(l)))
-            local sub = "Arena (2v2)   " .. (l.hasTeam and ("Team " .. l.teamRating) or "No team")
+            local sub = "Exp: " .. (ns.TIERS[l.tier] or "?")
+                .. "   " .. (l.hasTeam and ("Team " .. l.teamRating) or "No team")
             if l.gs > 0 then sub = sub .. "   GS " .. l.gs end
             if l.seasonal then sub = sub .. "   Seasonal" end
             if l.tenGames then sub = sub .. "   10 games" end
@@ -689,8 +690,8 @@ end
 
 function ns.RemoveMine()
     ns.DB.mine.posted = false
-    for name, l in pairs(ns.applicants) do
-        if not l.fake then pcall(SendAddonMessage, ns.PREFIX, "DEC", "WHISPER", name) end
+    for name in pairs(ns.applicants) do
+        pcall(SendAddonMessage, ns.PREFIX, "DEC", "WHISPER", name)
     end
     wipe(ns.applicants)
     ns.RemoveListing(UnitName("player"))

@@ -9,3 +9,7 @@
 - Improve role detection, listing and application expiry, and automatic delisting when grouped or in PvP instances.
 - Throttle refresh requests and validate invite/decline status messages.
 - Integrate ArenaLFG with the PvP frame and clarify GearScore fallback behavior.
+
+## 1.0.1
+
+- Initial public release.

@@ -151,7 +151,7 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.UpdateMinimapButton()
         ns.Print("Minimap button " .. (ns.DB.minimap.hide and "hidden" or "shown"))
     else
-        ns.Print("/alfg (toggle) | fake | fakeapp | clear | debug | me | comm | minimap")
+        ns.Print("/alfg (toggle) | clear | debug | me | comm | minimap")
     end
 end
 

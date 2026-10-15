@@ -110,18 +110,18 @@ function ns.MyListing()
     return ns.BuildMine()
 end
 
--- Expire stale listings (fake ones stay)
+-- Expire stale listings and applicants
 ns.Every(5, function()
     local now, removed = GetTime(), false
     for name, l in pairs(ns.listings) do
-        if not l.fake and (now - l.seen) > ns.EXPIRE then
+        if (now - l.seen) > ns.EXPIRE then
             ns.listings[name] = nil
             ns.applied[name] = nil
             removed = true
         end
     end
     for name, l in pairs(ns.applicants) do
-        if not l.fake and l.received and (now - l.received) > ns.EXPIRE then
+        if l.received and (now - l.received) > ns.EXPIRE then
             ns.applicants[name] = nil
             removed = true
         end
@@ -192,16 +192,12 @@ end
 function ns.Apply(l)
     if l.name == UnitName("player") then return end
     ns.applied[l.name] = "pending"
-    if l.fake then
-        ns.Print("Test group: sign-up simulated locally, nothing was sent.")
-    else
-        Whisper(l.name, "AP;" .. ns.Encode(ns.BuildMine()))
-    end
+    Whisper(l.name, "AP;" .. ns.Encode(ns.BuildMine()))
     ns.Changed()
 end
 
 function ns.CancelApply(l)
-    if ns.applied[l.name] == "pending" and not l.fake then Whisper(l.name, "CANCEL") end
+    if ns.applied[l.name] == "pending" then Whisper(l.name, "CANCEL") end
     ns.applied[l.name] = nil
     ns.Changed()
 end
@@ -217,7 +213,7 @@ end
 
 function ns.InviteApplicant(name)
     local l = ns.applicants[name]
-    if l and not l.fake then
+    if l then
         InviteUnit(name)
         Whisper(name, "INV")
     end
@@ -227,7 +223,7 @@ end
 
 function ns.DeclineApplicant(name)
     local l = ns.applicants[name]
-    if l and not l.fake then Whisper(name, "DEC") end
+    if l then Whisper(name, "DEC") end
     ns.applicants[name] = nil
     ns.Changed()
 end
