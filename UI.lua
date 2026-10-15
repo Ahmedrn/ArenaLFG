@@ -179,6 +179,8 @@ local function ShowTooltip(row)
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     GameTooltip:AddLine(ns.ListingTitle(l), 1, 0.82, 0, true)
     GameTooltip:AddLine(l.name .. " - " .. l.spec .. " " .. l.role, c.r, c.g, c.b)
+    local raceName = ns.GetRaceName(l.race)
+    if raceName then GameTooltip:AddLine("Race: " .. raceName, 0.8, 0.8, 0.8) end
     local partnerSpecs = ns.GetPartnerSpecNames(l)
     if #partnerSpecs > 0 then
         GameTooltip:AddLine("Looking for: " .. table.concat(partnerSpecs, ", "), 0.7, 0.9, 1, true)
@@ -223,7 +225,7 @@ end
 
 local function BuildRow(parent, i)
     local row = CreateFrame("Button", nil, parent)
-    row:SetWidth(408); row:SetHeight(ROW_H)
+    row:SetWidth(508); row:SetHeight(ROW_H)
     row:SetPoint("TOPLEFT", parent, "TOPLEFT", 8, -64 - (i - 1) * ROW_H)
     row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
     row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -242,11 +244,11 @@ local function BuildRow(parent, i)
     row.line:SetTexture(1, 1, 1, 0.08)
 
     row.title = row:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    row.title:SetPoint("TOPLEFT", 8, -5); row.title:SetWidth(300); row.title:SetHeight(14)
+    row.title:SetPoint("TOPLEFT", 8, -5); row.title:SetWidth(400); row.title:SetHeight(14)
     row.title:SetJustifyH("LEFT")
 
     row.sub = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    row.sub:SetPoint("TOPLEFT", 8, -21); row.sub:SetWidth(195); row.sub:SetHeight(12)
+    row.sub:SetPoint("TOPLEFT", 8, -21); row.sub:SetWidth(295); row.sub:SetHeight(12)
     row.sub:SetJustifyH("LEFT")
     row.sub:SetTextColor(0.65, 0.65, 0.65)
 
@@ -311,7 +313,9 @@ local function RefreshList()
             row.data = l
             SetListingSpecIcon(row.icon, l)
             local c = RAID_CLASS_COLORS[l.class] or { r = 1, g = 1, b = 1 }
-            row.title:SetText(string.format("|cff%02x%02x%02x%s|r  %s",
+            local raceIcon = ns.GetRaceIcon(l.race)
+            local raceMarkup = raceIcon and ("|TInterface\\Icons\\" .. raceIcon .. ":14:14|t ") or ""
+            row.title:SetText(raceMarkup .. string.format("|cff%02x%02x%02x%s|r  %s",
                 math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255),
                 l.name, ns.ListingTitle(l)))
             local sub = "Exp: " .. (ns.TIERS[l.tier] or "?")
@@ -675,6 +679,7 @@ function ns.PostMine()
         return
     end
     ns.DB.mine.posted = true
+    ns.DB.mine.postedAt = time()
     ns.frame.editing = false
     ns.AddListing(ns.MyListing())
     UpdateLeft()          -- update the UI first, so a sync problem can never leave it stale
@@ -690,6 +695,7 @@ end
 
 function ns.RemoveMine()
     ns.DB.mine.posted = false
+    ns.DB.mine.postedAt = nil
     for name in pairs(ns.applicants) do
         pcall(SendAddonMessage, ns.PREFIX, "DEC", "WHISPER", name)
     end
@@ -708,9 +714,9 @@ end
 function ns.BuildUI()
     local f = CreateFrame("Frame", "ArenaLFGFrame", UIParent)
     f:Hide()
-    f:SetWidth(780); f:SetHeight(510)
+    f:SetWidth(880); f:SetHeight(510)
     f:SetPoint("CENTER")
-    f:SetFrameStrata("DIALOG")
+    f:SetFrameStrata("HIGH")
     f:SetBackdrop({
         bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
         edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
@@ -744,7 +750,7 @@ function ns.BuildUI()
     f.mine:Hide(); f.groupView:Hide()
 
     -- Right panel: groups
-    local right = MakePanel(f, 444, 418)
+    local right = MakePanel(f, 544, 418)
     right:SetPoint("TOPLEFT", 318, -44)
     f.right = right
 
@@ -774,7 +780,7 @@ function ns.BuildUI()
     refresh:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     -- Search box with placeholder
-    local search = MakeEdit(right, 280, false, 40)
+    local search = MakeEdit(right, 360, false, 40)
     search:SetPoint("TOPLEFT", 14, -34)
     local ph = search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     ph:SetPoint("LEFT", 2, 0)

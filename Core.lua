@@ -6,6 +6,7 @@ ns.PREFIX    = "ARENALFG"       -- addon message prefix
 ns.CHANNEL   = "ArenaLFGSync"   -- hidden sync channel
 ns.EXPIRE    = 150            -- seconds without heartbeat before a listing disappears
 ns.HEARTBEAT = 60             -- seconds between re-broadcasts of your own listing
+ns.LISTING_RESUME_WINDOW = 300 -- keep a saved listing across reloads for up to five minutes
 ns.listings  = {}             -- [playerName] = listing table
 ns.applied   = {}             -- [leaderName] = "pending" | "invited" | "declined" (groups I signed up to)
 ns.applicants = {}            -- [playerName] = listing table (people who signed up to MY group)
@@ -107,6 +108,12 @@ ev:SetScript("OnEvent", function(self, event, arg1)
 
         ns.DB = ArenaLFGDB
         ns.DB.mine = realmCharacters[player].mine
+        local postedAt = tonumber(ns.DB.mine.postedAt)
+        local listingAge = postedAt and (time() - postedAt)
+        if ns.DB.mine.posted and (not listingAge or listingAge < 0 or listingAge > ns.LISTING_RESUME_WINDOW) then
+            ns.DB.mine.posted = false
+            ns.DB.mine.postedAt = nil
+        end
         ns.DB.mine.roleManual = nil
         ns.DEBUG = ns.DB.debug
         local okRole = false

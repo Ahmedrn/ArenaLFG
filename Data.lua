@@ -1,6 +1,43 @@
 local ADDON, ns = ...
 
 ns.PARTNER_ROLES = { "Any", "DPS", "Healer", "Tank" }
+ns.RACES = {
+    HUMAN = { label = "Human", icon = "Achievement_Character_Human_Male" },
+    ORC = { label = "Orc", icon = "Achievement_Character_Orc_Male" },
+    DWARF = { label = "Dwarf", icon = "Achievement_Character_Dwarf_Male" },
+    NIGHTELF = { label = "Night Elf", icon = "Achievement_Character_NightElf_Male" },
+    UNDEAD = { label = "Undead", icon = "Achievement_Character_Undead_Male" },
+    TAUREN = { label = "Tauren", icon = "Achievement_Character_Tauren_Male" },
+    GNOME = { label = "Gnome", icon = "Achievement_Character_Gnome_Male" },
+    TROLL = { label = "Troll", icon = "Achievement_Character_Troll_Male" },
+    BLOODELF = { label = "Blood Elf", icon = "Achievement_Character_BloodElf_Male" },
+    DRAENEI = { label = "Draenei", icon = "Achievement_Character_Draenei_Male" },
+}
+
+function ns.NormalizeRace(race)
+    if type(race) ~= "string" then return nil end
+    local token = strupper(race:gsub("[^%a]", ""))
+    if token == "SCOURGE" then token = "UNDEAD" end
+    return ns.RACES[token] and token or nil
+end
+
+function ns.GetMyRace()
+    local _, race = UnitRace("player")
+    return ns.NormalizeRace(race)
+end
+
+function ns.GetRaceIcon(race)
+    local token = ns.NormalizeRace(race)
+    local info = token and ns.RACES[token]
+    return info and info.icon
+end
+
+function ns.GetRaceName(race)
+    local token = ns.NormalizeRace(race)
+    local info = token and ns.RACES[token]
+    return info and info.label
+end
+
 ns.PARTNER_SPECS = {
     { id = "W1", role = "DPS", label = "Arms Warrior", icon = "Ability_Warrior_SavageBlow" },
     { id = "W2", role = "DPS", label = "Fury Warrior", icon = "Ability_Warrior_InnerRage" },

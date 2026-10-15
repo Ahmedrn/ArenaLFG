@@ -2,7 +2,7 @@ local ADDON, ns = ...
 
 ----------------------------------------------------------------------
 -- Wire format (sent as plain text in the hidden channel):
--- AL1;class;spec;role;gs;hasTeam;teamRating;tier;seasonal;tenGames;note;targetRole;targetSpecs;specId
+-- AL1;class;spec;role;gs;hasTeam;teamRating;tier;seasonal;tenGames;note;targetRole;targetSpecs;specId;race
 -- ("|" is the chat escape character, so ";" is the separator)
 ----------------------------------------------------------------------
 local SEP = ";"
@@ -25,7 +25,7 @@ function ns.Encode(l)
         "AL1", l.class, clean(l.spec), clean(l.role), l.gs or 0,
         b(l.hasTeam), l.teamRating or 0, l.tier or 1,
         b(l.seasonal), b(l.tenGames), clean(l.note),
-        l.targetRole or "Any", EncodeTargetSpecs(l), clean(l.specId),
+        l.targetRole or "Any", EncodeTargetSpecs(l), clean(l.specId), clean(l.race),
     }, SEP)
 end
 
@@ -66,6 +66,7 @@ function ns.Decode(msg, sender)
         targetAny = targetAny,
         targetSpecs = targetSpecs,
         specId = ns.IsValidSpecId(parts[2], parts[14]) and parts[14] or nil,
+        race = ns.NormalizeRace(parts[15]),
     }
 end
 
@@ -101,6 +102,7 @@ function ns.BuildMine()
         tier = m.tier, seasonal = m.seasonal, tenGames = m.tenGames, note = m.note,
         targetRole = m.targetRole, targetAny = m.targetAny, targetSpecs = m.targetSpecs,
         specId = ns.GetMySpecId(),
+        race = ns.GetMyRace(),
     }
 end
 

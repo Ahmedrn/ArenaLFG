@@ -9,7 +9,7 @@ Stop scrolling through global chat: see who is looking for a 2v2 partner, sign u
 
 ## Features
 
-- **Group browser** with class-colored player names, listing age, search and filters: role, team / no team, seasonal / non-seasonal, "10 games only".
+- **Group browser** with class-colored player names, race icons to identify faction, specialization icons, listing age, search and filters: role, team / no team, seasonal / non-seasonal, "10 games only".
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
 - **List your group** with role, gearscore, experience tier, a group title that can describe your preferred composition (for example, "Holy Paladin or Resto Druid"), and flags (seasonal character, 10 games for arena points). Listing settings are saved separately for each character.
@@ -42,7 +42,7 @@ The folder must be named exactly `ArenaLFG`.
 | Invite an applicant | Press **Invite** next to their name (sends a normal party invite) |
 | Refresh the list | The refresh button asks other players to announce their groups again |
 
-Listings expire automatically if the poster goes offline. Pending sign-ups clear when that leader's listing expires, and unhandled applicants expire after about 2.5 minutes. A saved listing is removed when you are grouped or enter an arena or battleground, so it will not automatically repost in those situations.
+Listings expire automatically if the poster goes offline. Pending sign-ups clear when that leader's listing expires, and unhandled applicants expire after about 2.5 minutes. Your listing can restore after a quick reload, but a saved listing older than five minutes is cleared on login. A saved listing is also removed when you are grouped or enter an arena or battleground.
 
 ### Notes on your profile
 

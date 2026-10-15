@@ -86,7 +86,10 @@ function ns.Broadcast()
     local l = ns.MyListing()
     if not l then return end
     local ok, sent = pcall(Send, ns.Encode(l))
-    if ok and sent then lastBroadcastAt = GetTime() end
+    if ok and sent then
+        lastBroadcastAt = GetTime()
+        ns.DB.mine.postedAt = time()
+    end
     ns.Debug("sent listing: " .. tostring(ok and sent))
 end
 
