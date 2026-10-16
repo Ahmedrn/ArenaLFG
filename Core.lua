@@ -56,6 +56,8 @@ function ns.Every(sec, fn)  table.insert(timers, { left = sec, every = sec, fn =
 local defaults = {
     debug = false,
     globalChannel = "Global",
+    promoPrompted = false,
+    promoOptIn = false,
     pvpIntegration = true,
     minimap = { angle = 200, hide = false },
     mine = {
@@ -79,12 +81,25 @@ local function CopyDefaults(src, dst)
     end
 end
 
+local function ShowPromoPrompt()
+    local popup = StaticPopup_Show("ARENALFG_PROMO_ONBOARDING")
+    if popup then
+        popup:ClearAllPoints()
+        popup:SetPoint("CENTER", UIParent, "CENTER", 0, -80)
+    end
+    return popup
+end
+
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("ADDON_LOADED")
 ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 ev:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON then
         ArenaLFGDB = ArenaLFGDB or {}
+        local isFirstInstall = next(ArenaLFGDB) == nil
+        if not isFirstInstall and ArenaLFGDB.promoPrompted == nil then
+            ArenaLFGDB.promoPrompted = true
+        end
         local legacyMine = ArenaLFGDB.mine
         CopyDefaults(defaults, ArenaLFGDB)
         ns.DB = ArenaLFGDB
@@ -124,12 +139,37 @@ ev:SetScript("OnEvent", function(self, event, arg1)
         for _, r in ipairs(ns.ROLES) do if r == ns.mine.role then okRole = true end end
         if not okRole then ns.mine.role = "DPS" end
         ns.BuildMinimapButton()
+        if isFirstInstall then
+            ns.After(10, function()
+                if ns.DB and not ns.DB.promoPrompted then
+                    if ShowPromoPrompt() then
+                        ns.DB.promoPrompted = true
+                    end
+                end
+            end)
+        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         ns.After(5, ns.Comm_Join) -- channels are not ready right at login
         ns.After(8, ns.RequestArenaData)
     end
 end)
+
+StaticPopupDialogs["ARENALFG_PROMO_ONBOARDING"] = {
+    text = "Thanks for installing ArenaLFG!\n\nArenaLFG works best when more players use it. May ArenaLFG post a short invitation in your configured Global chat channel every 30 minutes? Posts are public and only sent while you are joined to that channel.\n\nYou can change your choice any time with /alfg promo on or /alfg promo off.",
+    button1 = "Allow",
+    button2 = "No thanks",
+    OnAccept = function()
+        ns.SetPromoEnabled(true)
+    end,
+    OnCancel = function()
+        ns.SetPromoEnabled(false)
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = false,
+    preferredIndex = 3,
+}
 
 ----------------------------------------------------------------------
 -- Slash commands
@@ -150,8 +190,20 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg me - Show detected character and arena team information.")
         ns.Print("/alfg comm - Show sync channel status and retry joining if disconnected.")
         ns.Print("/alfg global [channel] - Show or set the chat channel to parse (default: Global).")
+        ns.Print("/alfg promo on|off - Enable or disable optional Global-channel promotion.")
+        ns.Print("/alfg promo prompt - Show the promotion consent prompt again.")
         ns.Print("/alfg debug - Toggle debug messages.")
         ns.Print("/alfg clear - Clear the local group list.")
+    elseif msg == "promo on" then
+        ns.SetPromoEnabled(true)
+    elseif msg == "promo off" then
+        ns.SetPromoEnabled(false)
+    elseif msg == "promo prompt" then
+        ns.DB.promoPrompted = true
+        ShowPromoPrompt()
+    elseif msg == "promo" then
+        ns.Print("Global-channel promotion is " .. (ns.DB.promoOptIn and "enabled" or "disabled")
+            .. ". Use /alfg promo on or /alfg promo off to change it.")
     elseif msg == "clear" then
         wipe(ns.listings)
         ns.Changed()

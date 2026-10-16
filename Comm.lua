@@ -8,10 +8,13 @@ local ADDON, ns = ...
 local chanId = 0
 local lower = string.lower
 local REQUEST_COOLDOWN = 10
+local PROMO_INTERVAL = 30 * 60
+local PROMO_MESSAGE = "ArenaLFG: Find 2v2 partners, browse Global ads, or list your group: https://warperia.com/addon-wotlk/arenalfg/"
 local JOIN_MAX_ATTEMPTS = 3
 local JOIN_RETRY_DELAY = 5
 local lastBroadcastAt
 local lastRequestAt
+local lastPromoAt = GetTime()
 local requestResponsePending = false
 local joinInProgress = false
 
@@ -125,6 +128,40 @@ end
 function ns.BroadcastRemove()
     pcall(Send, "ALrm")
 end
+
+function ns.SetPromoEnabled(enabled)
+    if not ns.DB then return end
+    ns.DB.promoPrompted = true
+    ns.DB.promoOptIn = enabled and true or false
+    lastPromoAt = GetTime()
+    ns.Print("Global-channel promotion " .. (ns.DB.promoOptIn and "enabled" or "disabled")
+        .. (ns.DB.promoOptIn and (". Posts every 30 minutes while you are joined to "
+            .. ns.DB.globalChannel .. ".") or "."))
+end
+
+local function BroadcastPromo()
+    local channelName = ns.DB and ns.DB.globalChannel
+    if type(channelName) ~= "string" or channelName == "" then
+        return false, "No Global channel is configured."
+    end
+    local channelId = tonumber((GetChannelName(channelName))) or 0
+    if channelId <= 0 then return false end
+    local ok, err = pcall(SendChatMessage, PROMO_MESSAGE, "CHANNEL", nil, channelId)
+    if not ok then return false, tostring(err) end
+    return true
+end
+
+ns.Every(30, function()
+    if ns.DB and ns.DB.promoOptIn and GetTime() - lastPromoAt >= PROMO_INTERVAL then
+        local sent, err = BroadcastPromo()
+        if sent then
+            lastPromoAt = GetTime()
+        elseif err then
+            ns.Print("Could not send scheduled promo: " .. err)
+            lastPromoAt = GetTime()
+        end
+    end
+end)
 
 -- Heartbeat: re-announce your own listing so it does not expire
 ns.Every(ns.HEARTBEAT, function()

@@ -10,6 +10,7 @@
 
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
 - **Chat ad import:** clear 2v2 partner ads can appear as temporary listings. Parsed details may be incomplete or inaccurate. The selected-ad button opens a whisper; use the row's right-click menu to invite.
+- **Optional promotion:** choose whether ArenaLFG posts a short invitation in your configured Global channel every 30 minutes. It asks once on first install; change your choice with `/alfg promo on` or `/alfg promo off`, or reopen the prompt with `/alfg promo prompt`.
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
 - **List your group** with role, gearscore, experience tier, preferred partner specs, a short title and flags (seasonal character, 10 games for arena points). The listed-group card mirrors the browser listing and shows your race, class-colored name, role, title, team details and listing age. Settings are saved separately for each character.
@@ -63,7 +64,7 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 
 ## How it works
 
-ArenaLFG shares listings with other users of the addon on your faction. Listings are refreshed while their owners are available and expire when they are no longer current. Global chat ads may appear as temporary listings on your client; imported details are best-effort and are not shared by ArenaLFG. Sign-ups are sent privately to the group leader.
+ArenaLFG shares listings with other users of the addon on your faction. Listings are refreshed while their owners are available and expire when they are no longer current. Global chat ads may appear as temporary listings on your client; imported details are best-effort and are not shared by ArenaLFG. Sign-ups are sent privately to the group leader. If you opt in, ArenaLFG posts a public invitation in your configured Global channel every 30 minutes while you are joined to it.
 
 ### Privacy
 

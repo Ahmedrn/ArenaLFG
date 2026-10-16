@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add an optional first-run opt-in for a public ArenaLFG invitation in the configured Global channel every 30 minutes.
+- Add a command to reopen the promotion prompt and recognize ratings joined directly to spec shorthand.
+- Simplify the promotional message text.
+
 ## 1.3.0
 
 - Import Global chat 2v2 partner ads as temporary local listings, with best-effort parsing; improve ad recognition and skip identical repeats.

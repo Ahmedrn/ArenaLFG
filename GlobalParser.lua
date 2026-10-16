@@ -168,6 +168,7 @@ local function Normalize(text)
         end)
         text = text:gsub("(%d)%s*" .. suffix .. "%f[%A]", "%1 " .. suffix)
     end
+    text = text:gsub("(%d)(%a%a+)", "%1 %2")
     text = text:gsub("2%s*vs?%s*2", "2v2")
         :gsub("2%s*x%s*2", "2v2")
         :gsub("2%s*on%s*2", "2v2")
