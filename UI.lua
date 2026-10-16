@@ -197,7 +197,7 @@ local function ShowTooltip(row)
     GameTooltip:AddLine(ns.ListingTitle(l), 1, 0.82, 0, true)
     GameTooltip:AddLine(l.name .. " - " .. l.spec .. " " .. l.role, c.r, c.g, c.b)
     if l.source == "global" then
-        GameTooltip:AddLine("Parsed from Global chat; details may be incomplete.", 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine("Parsed from chat; details may be incomplete.", 0.8, 0.8, 0.8, true)
     end
     local raceName = ns.GetRaceName(l.race)
     if raceName then GameTooltip:AddLine("Race: " .. raceName, 0.8, 0.8, 0.8) end
@@ -206,11 +206,16 @@ local function ShowTooltip(row)
         GameTooltip:AddLine("Looking for: " .. table.concat(partnerSpecs, ", "), 0.7, 0.9, 1, true)
     end
     GameTooltip:AddLine("Experience: " .. (ns.TIERS[l.tier] or "?"), 0.8, 0.8, 0.8)
-    GameTooltip:AddLine("Gearscore: " .. (l.gs > 0 and l.gs or "not set"), 0.8, 0.8, 0.8)
+    local gearScore = l.gsEstimate
+        and (l.gsEstimate .. " (estimated from chat wording)")
+        or (l.gs > 0 and l.gs or "not set")
+    GameTooltip:AddLine("Gearscore: " .. gearScore, 0.8, 0.8, 0.8)
     if l.teamKnown == false then
         GameTooltip:AddLine("Team status not detected from chat", 0.8, 0.8, 0.8)
-    elseif l.hasTeam then
+    elseif l.hasTeam and l.teamRating > 0 then
         GameTooltip:AddLine("Has a 2v2 team, rating " .. l.teamRating, 0.2, 1, 0.2)
+    elseif l.hasTeam then
+        GameTooltip:AddLine("Has a 2v2 team; rating not stated", 0.2, 1, 0.2)
     else
         GameTooltip:AddLine("No team yet", 0.8, 0.8, 0.8)
     end
@@ -315,7 +320,7 @@ local function UpdateSignUp()
         return
     end
     if l.source == "global" then
-        b:SetText("Invite")
+        b:SetText("Whisper")
         b:Enable()
         return
     end
@@ -366,10 +371,10 @@ local function RefreshList()
                 math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255),
                 l.name, ns.ListingTitle(l)))
             local teamText = l.teamKnown == false and "Team ?"
-                or (l.hasTeam and ("Team " .. l.teamRating) or "No team")
+                or (l.hasTeam and (l.teamRating > 0 and ("Team " .. l.teamRating) or "Has team") or "No team")
             local sub = "Exp: " .. (ns.TIERS[l.tier] or "?")
                 .. "   " .. teamText
-            if l.gs > 0 then sub = sub .. "   GS " .. l.gs end
+            if l.gs > 0 then sub = sub .. "   GS " .. (l.gsEstimate or l.gs) end
             if l.seasonal then sub = sub .. "   Seasonal" end
             if l.tenGames then sub = sub .. "   10 games" end
             row.sub:SetText(sub)
@@ -381,7 +386,7 @@ local function RefreshList()
             if l.name == me then
                 row.status:SetText("|cff00ff00Your group|r")
             elseif l.source == "global" then
-                row.status:SetText("|cff80c0ffGlobal ad|r")
+                row.status:SetText("|cff80c0ffChat ad|r")
             else
                 row.status:SetText(STATUS_TEXT[ns.applied[l.name]] or "")
             end
@@ -903,7 +908,7 @@ function ns.BuildUI()
         local l = ns.selected and ns.listings[ns.selected]
         if not l then return end
         if l.source == "global" then
-            InviteUnit(l.name)
+            ChatFrame_SendTell(l.name)
         elseif ns.applied[l.name] == "pending" then
             ns.CancelApply(l)
         else

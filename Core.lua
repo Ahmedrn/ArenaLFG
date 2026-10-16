@@ -55,6 +55,7 @@ function ns.Every(sec, fn)  table.insert(timers, { left = sec, every = sec, fn =
 ----------------------------------------------------------------------
 local defaults = {
     debug = false,
+    globalChannel = "Global",
     pvpIntegration = true,
     minimap = { angle = 200, hide = false },
     mine = {
@@ -136,7 +137,8 @@ end)
 SLASH_ARENALFG1 = "/alfg"
 SLASH_ARENALFG2 = "/arenalfg"
 SlashCmdList["ARENALFG"] = function(msg)
-    msg = strlower(strtrim(msg or ""))
+    local rawMsg = strtrim(msg or "")
+    msg = strlower(rawMsg)
     if msg == "" then
         ns.ToggleUI()
     elseif msg == "help" then
@@ -147,7 +149,7 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg pvp - Toggle PvP window integration (enabled by default).")
         ns.Print("/alfg me - Show detected character and arena team information.")
         ns.Print("/alfg comm - Show sync channel status and retry joining if disconnected.")
-        ns.Print("/alfg global - Show Global chat parser load status.")
+        ns.Print("/alfg global [channel] - Show or set the chat channel to parse (default: Global).")
         ns.Print("/alfg debug - Toggle debug messages.")
         ns.Print("/alfg clear - Clear the local group list.")
     elseif msg == "clear" then
@@ -169,9 +171,18 @@ SlashCmdList["ARENALFG"] = function(msg)
     elseif msg == "comm" then
         ns.Comm_Status()
     elseif msg == "global" then
-        local globalChannelId = tonumber(GetChannelName("Global")) or 0
+        local channelName = ns.DB.globalChannel
+        local globalChannelId = tonumber(GetChannelName(channelName)) or 0
         ns.Print("Global chat parser " .. (ns.GlobalParserLoaded and "loaded" or "NOT loaded")
-            .. "; Global channel id: " .. globalChannelId .. ".")
+            .. "; channel: " .. channelName .. " (id " .. globalChannelId .. ").")
+    elseif msg:match("^global%s+") then
+        local channelName = strtrim(rawMsg:match("^%S+%s+(.+)$") or "")
+        if channelName == "" or #channelName > 32 or channelName:find("|", 1, true) then
+            ns.Print("Channel name must be 1-32 characters and cannot contain '|'.")
+            return
+        end
+        ns.DB.globalChannel = channelName
+        ns.Print("Global chat parser channel set to " .. channelName .. ".")
     elseif msg == "minimap" then
         ns.DB.minimap.hide = not ns.DB.minimap.hide
         ns.UpdateMinimapButton()

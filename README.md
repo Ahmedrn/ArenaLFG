@@ -9,7 +9,7 @@
 ## Features
 
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
-- **Global chat import:** clear 2v2 partner ads appear as temporary listings. Detected details may be incomplete or inaccurate. Use **Invite** to send a normal party invite to an imported ad.
+- **Chat ad import:** clear 2v2 partner ads can appear as temporary listings. Parsed details may be incomplete or inaccurate. The selected-ad button opens a whisper; use the row's right-click menu to invite.
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
 - **List your group** with role, gearscore, experience tier, preferred partner specs, a short title and flags (seasonal character, 10 games for arena points). The listed-group card mirrors the browser listing and shows your race, class-colored name, role, title, team details and listing age. Settings are saved separately for each character.
