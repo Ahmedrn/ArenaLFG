@@ -138,7 +138,7 @@ function ns.GetSorted()
     local f, out = ns.DB.filters, {}
     for _, l in pairs(ns.listings) do
         local ok = true
-        if f.role ~= "Any" and l.role ~= "Unknown" and l.role ~= f.role then ok = false end
+        if f.role ~= "Any" and l.role ~= f.role then ok = false end
         if f.team == "Has team" and l.teamKnown ~= false and not l.hasTeam then ok = false end
         if f.team == "No team" and l.teamKnown ~= false and l.hasTeam then ok = false end
         if f.seasonal == "Seasonal" and l.seasonal == false then ok = false end

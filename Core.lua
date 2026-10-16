@@ -1,7 +1,7 @@
 local ADDON, ns = ...
 _G.ArenaLFG = ns -- handy in game: /run print(ArenaLFG.VERSION)
 
-ns.VERSION   = "1.3.0"
+ns.VERSION   = "1.4.0"
 ns.PREFIX    = "ARENALFG"       -- addon message prefix
 ns.CHANNEL   = "ArenaLFGSync"   -- hidden sync channel
 ns.EXPIRE    = 150            -- seconds without heartbeat before a listing disappears
@@ -56,8 +56,9 @@ function ns.Every(sec, fn)  table.insert(timers, { left = sec, every = sec, fn =
 local defaults = {
     debug = false,
     globalChannel = "Global",
-    promoPrompted = false,
-    promoOptIn = false,
+    announceAsked = false,
+    announce = false,
+    announceLastAt = 0,
     pvpIntegration = true,
     minimap = { angle = 200, hide = false },
     mine = {
@@ -81,25 +82,46 @@ local function CopyDefaults(src, dst)
     end
 end
 
-local function ShowPromoPrompt()
-    local popup = StaticPopup_Show("ARENALFG_PROMO_ONBOARDING")
+local ev = CreateFrame("Frame")
+local pendingAnnouncePrompt = false
+local forceAnnouncePrompt = false
+
+local function ShowAnnouncePrompt(force)
+    if InCombatLockdown() then
+        pendingAnnouncePrompt = true
+        forceAnnouncePrompt = force or forceAnnouncePrompt
+        ev:RegisterEvent("PLAYER_REGEN_ENABLED")
+        return
+    end
+    local popup = StaticPopup_Show("ARENALFG_ANNOUNCE_ONBOARDING")
     if popup then
+        pendingAnnouncePrompt = false
+        forceAnnouncePrompt = false
+        ev:UnregisterEvent("PLAYER_REGEN_ENABLED")
+        ns.DB.announceAsked = true
+        popup:SetWidth(440)
+        popup:SetHeight(280)
+        local popupText = _G[popup:GetName() .. "Text"]
+        if popupText then popupText:SetWidth(390) end
         popup:ClearAllPoints()
         popup:SetPoint("CENTER", UIParent, "CENTER", 0, -80)
+    elseif ns.DB and (force or not ns.DB.announceAsked) then
+        pendingAnnouncePrompt = true
+        ns.After(5, function()
+            if pendingAnnouncePrompt and ns.DB
+                and (forceAnnouncePrompt or not ns.DB.announceAsked) then
+                ShowAnnouncePrompt(forceAnnouncePrompt)
+            end
+        end)
     end
     return popup
 end
 
-local ev = CreateFrame("Frame")
 ev:RegisterEvent("ADDON_LOADED")
 ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 ev:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON then
         ArenaLFGDB = ArenaLFGDB or {}
-        local isFirstInstall = next(ArenaLFGDB) == nil
-        if not isFirstInstall and ArenaLFGDB.promoPrompted == nil then
-            ArenaLFGDB.promoPrompted = true
-        end
         local legacyMine = ArenaLFGDB.mine
         CopyDefaults(defaults, ArenaLFGDB)
         ns.DB = ArenaLFGDB
@@ -139,35 +161,39 @@ ev:SetScript("OnEvent", function(self, event, arg1)
         for _, r in ipairs(ns.ROLES) do if r == ns.mine.role then okRole = true end end
         if not okRole then ns.mine.role = "DPS" end
         ns.BuildMinimapButton()
-        if isFirstInstall then
-            ns.After(10, function()
-                if ns.DB and not ns.DB.promoPrompted then
-                    if ShowPromoPrompt() then
-                        ns.DB.promoPrompted = true
-                    end
-                end
-            end)
-        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         ns.After(5, ns.Comm_Join) -- channels are not ready right at login
         ns.After(8, ns.RequestArenaData)
+        ns.After(5, function()
+            if ns.DB and not ns.DB.announceAsked and ShowAnnouncePrompt() then
+                ns.DB.announceAsked = true
+            end
+        end)
+    elseif event == "PLAYER_REGEN_ENABLED" and pendingAnnouncePrompt then
+        if ns.DB and (forceAnnouncePrompt or not ns.DB.announceAsked) then
+            ShowAnnouncePrompt(forceAnnouncePrompt)
+        else
+            pendingAnnouncePrompt = false
+            forceAnnouncePrompt = false
+            self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+        end
     end
 end)
 
-StaticPopupDialogs["ARENALFG_PROMO_ONBOARDING"] = {
-    text = "Thanks for installing ArenaLFG!\n\nArenaLFG works best when more players use it. May ArenaLFG post a short invitation in your configured Global chat channel every 30 minutes? Posts are public and only sent while you are joined to that channel.\n\nYou can change your choice any time with /alfg promo on or /alfg promo off.",
-    button1 = "Allow",
+StaticPopupDialogs["ARENALFG_ANNOUNCE_ONBOARDING"] = {
+    text = "Thanks for installing ArenaLFG!\n\nWant ArenaLFG to announce your group in Global chat when you list it, so players without the addon can find you too?\n\nExample:\nDisc LF Hpal/Rdruid 2v2 951cr Exp: 2200+ (ArenaLFG)\n\n- Posted under your name, at most once every 2 minutes, only while your group is listed.\n- Server chat rules apply to you as if you typed it yourself.\n\nChange it anytime with /alfg announce on or /alfg announce off.",
+    button1 = "Yes, announce my group",
     button2 = "No thanks",
     OnAccept = function()
-        ns.SetPromoEnabled(true)
+        ns.SetAnnounceEnabled(true)
     end,
     OnCancel = function()
-        ns.SetPromoEnabled(false)
+        ns.SetAnnounceEnabled(false)
     end,
     timeout = 0,
-    whileDead = true,
-    hideOnEscape = false,
+    whileDead = 1,
+    hideOnEscape = 1,
     preferredIndex = 3,
 }
 
@@ -190,20 +216,21 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg me - Show detected character and arena team information.")
         ns.Print("/alfg comm - Show sync channel status and retry joining if disconnected.")
         ns.Print("/alfg global [channel] - Show or set the chat channel to parse (default: Global).")
-        ns.Print("/alfg promo on|off - Enable or disable optional Global-channel promotion.")
-        ns.Print("/alfg promo prompt - Show the promotion consent prompt again.")
+        ns.Print("/alfg announce on|off - Enable or disable Global group announcements.")
+        ns.Print("/alfg announce prompt - Show the announcement consent prompt again.")
         ns.Print("/alfg debug - Toggle debug messages.")
         ns.Print("/alfg clear - Clear the local group list.")
-    elseif msg == "promo on" then
-        ns.SetPromoEnabled(true)
-    elseif msg == "promo off" then
-        ns.SetPromoEnabled(false)
-    elseif msg == "promo prompt" then
-        ns.DB.promoPrompted = true
-        ShowPromoPrompt()
-    elseif msg == "promo" then
-        ns.Print("Global-channel promotion is " .. (ns.DB.promoOptIn and "enabled" or "disabled")
-            .. ". Use /alfg promo on or /alfg promo off to change it.")
+    elseif msg == "announce on" then
+        ns.SetAnnounceEnabled(true)
+    elseif msg == "announce off" then
+        ns.SetAnnounceEnabled(false)
+    elseif msg == "announce prompt" then
+        if ShowAnnouncePrompt(true) == nil and not InCombatLockdown() then
+            ns.Print("Could not open the announcement prompt.")
+        end
+    elseif msg == "announce" then
+        ns.Print("Global group announcements are " .. (ns.DB.announce and "enabled" or "disabled")
+            .. ". Use /alfg announce on or /alfg announce off to change it.")
     elseif msg == "clear" then
         wipe(ns.listings)
         ns.Changed()

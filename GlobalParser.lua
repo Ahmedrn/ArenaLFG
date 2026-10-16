@@ -82,7 +82,7 @@ local SPEC_ALIASES = {
         "enhance shammy", "enh shaman", "enh sham", "enh shammy", "ensham", "enhsham",
         "enhancement", "enhance", "enha", "enh", "shaman enh", "sham enh" },
     S3 = { "restoration shaman", "restoration shammy", "resto shaman", "resto sham", "resto shammy",
-        "rshaman", "rsham", "rshammy", "r shaman", "r sham", "r shammy",
+        "rshaman", "rsham", "rshamy", "rshammy", "r shaman", "r sham", "r shammy",
         "shaman resto", "sham resto" },
 
     M1 = { "arcane mage", "arc mage", "amage", "arcane", "mage arcane" },
@@ -401,12 +401,13 @@ end
 local function FindOwnerDetails(text, classHint)
     text = WithoutPreferences(text)
     local intentPosition = FindIntentPosition(text)
-    local ownerText = intentPosition and text:sub(1, intentPosition) or ""
+    local queuePosition, queueLength = FindQueuePosition(text)
+    local ownerEnd = intentPosition or queuePosition
+    local ownerText = ownerEnd and text:sub(1, ownerEnd) or ""
     local class = classHint or FindClass(ownerText)
     local spec = FindSpec(ownerText, class)
 
     if not spec then
-        local queuePosition, queueLength = FindQueuePosition(text)
         if queuePosition then
             local afterQueue = " " .. text:sub(queuePosition + queueLength)
             local afterQueueClass = classHint or FindClass(afterQueue)

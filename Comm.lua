@@ -8,13 +8,23 @@ local ADDON, ns = ...
 local chanId = 0
 local lower = string.lower
 local REQUEST_COOLDOWN = 10
-local PROMO_INTERVAL = 30 * 60
-local PROMO_MESSAGE = "ArenaLFG: Find 2v2 partners, browse Global ads, or list your group: https://warperia.com/addon-wotlk/arenalfg/"
+local ANNOUNCE_INTERVAL = 2 * 60
 local JOIN_MAX_ATTEMPTS = 3
 local JOIN_RETRY_DELAY = 5
+local SPEC_ABBREVIATIONS = {
+    W1 = "Awar", W2 = "Fwar", W3 = "Pwar",
+    P1 = "Hpal", P2 = "Prot", P3 = "Ret",
+    H1 = "BM", H2 = "MM", H3 = "SV",
+    R1 = "Assa", R2 = "Combat", R3 = "Sub",
+    C1 = "Disc", C2 = "Hpriest", C3 = "SPriest",
+    D1 = "Blood", D2 = "Frost", D3 = "UH",
+    S1 = "Ele", S2 = "Enha", S3 = "Rsham",
+    M1 = "Arc", M2 = "Fire", M3 = "Frost",
+    L1 = "Affli", L2 = "Demo", L3 = "Destro",
+    U1 = "Boomkin", U2 = "Feral", U3 = "Rdruid",
+}
 local lastBroadcastAt
 local lastRequestAt
-local lastPromoAt = GetTime()
 local requestResponsePending = false
 local joinInProgress = false
 
@@ -129,38 +139,111 @@ function ns.BroadcastRemove()
     pcall(Send, "ALrm")
 end
 
-function ns.SetPromoEnabled(enabled)
+function ns.SetAnnounceEnabled(enabled)
     if not ns.DB then return end
-    ns.DB.promoPrompted = true
-    ns.DB.promoOptIn = enabled and true or false
-    lastPromoAt = GetTime()
-    ns.Print("Global-channel promotion " .. (ns.DB.promoOptIn and "enabled" or "disabled")
-        .. (ns.DB.promoOptIn and (". Posts every 30 minutes while you are joined to "
-            .. ns.DB.globalChannel .. ".") or "."))
+    ns.DB.announceAsked = true
+    ns.DB.announce = enabled and true or false
+    ns.Print("Global group announcements " .. (ns.DB.announce and "enabled" or "disabled")
+        .. (ns.DB.announce and ". Your group will be announced while listed, at most once every 2 minutes."
+            or "."))
+    if ns.DB.announce then ns.TryAnnounceMine() end
+    ns.Changed()
 end
 
-local function BroadcastPromo()
+local function BuildAnnouncement()
+    local listing = ns.MyListing()
+    if not listing then return nil end
+
+    local specId = ns.GetMySpecId()
+    local spec = ns.GetMySpec()
+    local class = UnitClass("player")
+    local owner = SPEC_ABBREVIATIONS[specId]
+        or ((spec and spec ~= "None" and (spec .. " ") or "") .. (class or ""))
+    if owner == "" then owner = "2v2 player" end
+
+    local targets = {}
+    if type(listing.targetSpecs) == "table" then
+        for _, partnerSpec in ipairs(ns.PARTNER_SPECS) do
+            if partnerSpec.role == listing.targetRole and listing.targetSpecs[partnerSpec.id] then
+                targets[#targets + 1] = SPEC_ABBREVIATIONS[partnerSpec.id] or partnerSpec.label
+            end
+        end
+    end
+    local lookingFor
+    if #targets > 0 and #targets <= 2 then
+        lookingFor = table.concat(targets, "/")
+    elseif listing.targetRole and listing.targetRole ~= "Any" then
+        lookingFor = listing.targetRole
+    else
+        lookingFor = "partner"
+    end
+
+    local rating = ""
+    if listing.hasTeam and listing.teamRating and listing.teamRating > 0 then
+        rating = " " .. tostring(listing.teamRating) .. "cr"
+    end
+    local experience = listing.tier and ns.TIERS[listing.tier]
+    if experience then
+        rating = rating .. " Exp: " .. experience
+    end
+    return owner .. " LF " .. lookingFor .. " 2v2" .. rating .. " (ArenaLFG)"
+end
+
+function ns.TryAnnounceMine()
+    if not (ns.DB and ns.DB.announce and ns.mine and ns.mine.posted) then return false end
+    if ns.InGroup() or ns.InPvpInstance() then return false end
+
+    local now = time()
+    local lastAnnounceAt = tonumber(ns.DB.announceLastAt) or 0
+    if now - lastAnnounceAt < ANNOUNCE_INTERVAL then return false end
+
     local channelName = ns.DB and ns.DB.globalChannel
     if type(channelName) ~= "string" or channelName == "" then
-        return false, "No Global channel is configured."
+        return false
     end
     local channelId = tonumber((GetChannelName(channelName))) or 0
     if channelId <= 0 then return false end
-    local ok, err = pcall(SendChatMessage, PROMO_MESSAGE, "CHANNEL", nil, channelId)
-    if not ok then return false, tostring(err) end
+
+    local message = BuildAnnouncement()
+    if not message then return false end
+    local ok, err = pcall(SendChatMessage, message, "CHANNEL", nil, channelId)
+    if not ok then
+        ns.DB.announceLastAt = now
+        ns.Print("Could not announce your group: " .. tostring(err))
+        ns.Changed()
+        return false
+    end
+    ns.DB.announceLastAt = now
+    ns.Changed()
     return true
 end
 
-ns.Every(30, function()
-    if ns.DB and ns.DB.promoOptIn and GetTime() - lastPromoAt >= PROMO_INTERVAL then
-        local sent, err = BroadcastPromo()
-        if sent then
-            lastPromoAt = GetTime()
-        elseif err then
-            ns.Print("Could not send scheduled promo: " .. err)
-            lastPromoAt = GetTime()
-        end
+function ns.GetAnnounceStatus()
+    if not (ns.DB and ns.DB.announce) then
+        return "Global announcements off"
     end
+    if not (ns.mine and ns.mine.posted) then
+        return "Global announcement: list your group first"
+    end
+    if ns.InGroup() or ns.InPvpInstance() then
+        return "Global announcement paused while grouped or in PvP"
+    end
+
+    local channelName = ns.DB.globalChannel
+    if type(channelName) ~= "string" or channelName == ""
+        or (tonumber((GetChannelName(channelName))) or 0) <= 0 then
+        return "Join " .. tostring(channelName or "Global") .. " to announce"
+    end
+
+    local remaining = ANNOUNCE_INTERVAL - (time() - (tonumber(ns.DB.announceLastAt) or 0))
+    if remaining <= 0 then
+        return "Global post ready (within 30 sec)"
+    end
+    return "Next Global post in about " .. math.ceil(remaining / 60) .. " min"
+end
+
+ns.Every(30, function()
+    ns.TryAnnounceMine()
 end)
 
 -- Heartbeat: re-announce your own listing so it does not expire

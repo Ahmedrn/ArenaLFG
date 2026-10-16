@@ -2,9 +2,11 @@
 
 ## Unreleased
 
-- Add an optional first-run opt-in for a public ArenaLFG invitation in the configured Global channel every 30 minutes.
-- Add a command to reopen the promotion prompt and recognize ratings joined directly to spec shorthand.
-- Simplify the promotional message text.
+## 1.4.0
+
+- Add opt-in Global announcements for listed groups and a Share button for Global.
+- Improve announcement formatting and status, and enlarge the consent popup.
+- Improve Global ad parsing for common 2v2 formats and apply browser filters consistently.
 
 ## 1.3.0
 

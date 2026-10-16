@@ -476,6 +476,9 @@ local function BuildGroupView(parent, f)
     w.info = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     w.info:SetPoint("TOPLEFT", 8, -62); w.info:SetWidth(260); w.info:SetHeight(12)
     w.info:SetJustifyH("LEFT")
+    w.announceStatus = ban:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    w.announceStatus:SetPoint("TOPLEFT", 8, -78); w.announceStatus:SetWidth(258); w.announceStatus:SetHeight(12)
+    w.announceStatus:SetJustifyH("LEFT")
     w.icon = ban:CreateTexture(nil, "ARTWORK")
     w.icon:SetWidth(24); w.icon:SetHeight(24)
     w.icon:SetPoint("TOPRIGHT", -8, -8)
@@ -518,10 +521,22 @@ local function BuildGroupView(parent, f)
     w.sync = g:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     w.sync:SetPoint("BOTTOMLEFT", 12, 42)
 
-    w.delist = MakeButton(g, "Delist My Group", 150, 24)
+    w.delist = MakeButton(g, "Delist My Group", 112, 24)
     w.delist:SetPoint("BOTTOMLEFT", 8, 10)
     w.delist:SetScript("OnClick", function() ns.RemoveMine() end)
-    w.edit = MakeButton(g, "Edit", 100, 24)
+    w.share = MakeButton(g, "Share", 64, 24)
+    w.share:SetPoint("LEFT", w.delist, "RIGHT", 6, 0)
+    w.share:SetScript("OnClick", function()
+        local channelName = ns.DB and ns.DB.globalChannel
+        local channelId = type(channelName) == "string" and tonumber((GetChannelName(channelName))) or 0
+        if not channelId or channelId <= 0 then
+            ns.Print("Join your configured Global channel before sharing ArenaLFG.")
+            return
+        end
+        ChatFrame_OpenChat("/" .. channelId
+            .. " Know a 2v2 partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+    end)
+    w.edit = MakeButton(g, "Edit", 64, 24)
     w.edit:SetPoint("BOTTOMRIGHT", -8, 10)
     w.edit:SetScript("OnClick", function() ns.EditMine() end)
 
@@ -553,6 +568,7 @@ local function RefreshGroupView()
     info[#info + 1] = minutes == 0 and "just now"
         or (minutes == 1 and "1 min ago" or minutes .. " min ago")
     w.info:SetText(table.concat(info, "   "))
+    w.announceStatus:SetText(ns.GetAnnounceStatus and ns.GetAnnounceStatus() or "")
     SetSpecIcon(w.icon, me.class)
 
     local list = {}
@@ -775,6 +791,7 @@ function ns.PostMine()
     ns.AddListing(ns.MyListing())
     UpdateLeft()          -- update the UI first, so a sync problem can never leave it stale
     ns.Broadcast()
+    ns.TryAnnounceMine()
 end
 
 function ns.EditMine()

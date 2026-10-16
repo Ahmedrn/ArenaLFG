@@ -10,7 +10,8 @@
 
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
 - **Chat ad import:** clear 2v2 partner ads can appear as temporary listings. Parsed details may be incomplete or inaccurate. The selected-ad button opens a whisper; use the row's right-click menu to invite.
-- **Optional promotion:** choose whether ArenaLFG posts a short invitation in your configured Global channel every 30 minutes. It asks once on first install; change your choice with `/alfg promo on` or `/alfg promo off`, or reopen the prompt with `/alfg promo prompt`.
+- **Optional Global announcement:** opt in to share your listed group in Global. Posts are public and subject to server chat rules; toggle announcements with `/alfg announce on` or `/alfg announce off`.
+- **Share ArenaLFG:** prefill a Global chat invitation from the Share button, then review and send it yourself.
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
 - **List your group** with role, gearscore, experience tier, preferred partner specs, a short title and flags (seasonal character, 10 games for arena points). The listed-group card mirrors the browser listing and shows your race, class-colored name, role, title, team details and listing age. Settings are saved separately for each character.
@@ -23,7 +24,7 @@
 
 ## Installation
 
-1. Download `ArenaLFG-v1.3.0.zip` from the [Releases page](../../releases) (do **not** use "Download ZIP" on the repository page, it creates a wrongly named folder).
+1. Download `ArenaLFG-v1.4.0.zip` from the [Releases page](../../releases) (do **not** use "Download ZIP" on the repository page, it creates a wrongly named folder).
 2. Extract it into your addons folder so the path looks like:
    ```
    World of Warcraft\Interface\AddOns\ArenaLFG\ArenaLFG.toc
@@ -43,8 +44,9 @@ The folder must be named exactly `ArenaLFG`.
 | Cancel a sign-up | Select the group, press **Cancel Sign-Up** |
 | Invite an applicant | Press **Invite** next to their name (sends a normal party invite) |
 | Refresh the list | The refresh button asks other players to announce their groups again; if it is still on cooldown, the remaining wait is shown in chat |
+| Share ArenaLFG | Click **Share** in your listed-group view, then review and send the prefilled Global message |
 
-Listings expire automatically if the poster goes offline. Pending sign-ups clear when that leader's listing expires, and unhandled applicants expire after about 2.5 minutes. Your listing can restore after a quick reload, but a saved listing older than five minutes is cleared on login. A saved listing is also removed when you are grouped or enter an arena or battleground.
+Listings and applications expire automatically when they are no longer current. Your listing can restore after a quick reload, and is removed when you are grouped or enter an arena or battleground.
 
 ### Notes on your profile
 
@@ -61,10 +63,12 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | `/alfg me` | Print what the addon detects about your character (class, spec, GS, arena teams) |
 | `/alfg comm` | Check ArenaLFG connection status and retry if needed |
 | `/alfg clear` | Clear the local list |
+| `/alfg announce on` / `off` | Enable or disable Global announcements for your listed group |
+| `/alfg announce prompt` | Reopen the announcement consent prompt |
 
 ## How it works
 
-ArenaLFG shares listings with other users of the addon on your faction. Listings are refreshed while their owners are available and expire when they are no longer current. Global chat ads may appear as temporary listings on your client; imported details are best-effort and are not shared by ArenaLFG. Sign-ups are sent privately to the group leader. If you opt in, ArenaLFG posts a public invitation in your configured Global channel every 30 minutes while you are joined to it.
+ArenaLFG shares listings with other addon users on your faction. It can also display relevant Global chat ads locally and send sign-ups privately to group leaders. If enabled, your group announcement is posted publicly in Global under your character name; server chat rules apply.
 
 ### Privacy
 
