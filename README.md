@@ -9,7 +9,7 @@
 ## Features
 
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
-- **Global chat import:** clear 2v2 partner ads from the `Global` channel appear as temporary, local-only listings. Class and race are read from the chat sender GUID when the client supports it; specialization is inferred from the ad text and may be unknown or inaccurate. Common abbreviations such as `2s`, `MM`, `elem`, and `boomkin` are recognized. Use **Invite** to send a normal party invite to a parsed ad.
+- **Global chat import:** clear 2v2 partner ads appear as temporary listings. Detected details may be incomplete or inaccurate. Use **Invite** to send a normal party invite to an imported ad.
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
 - **List your group** with role, gearscore, experience tier, preferred partner specs, a short title and flags (seasonal character, 10 games for arena points). The listed-group card mirrors the browser listing and shows your race, class-colored name, role, title, team details and listing age. Settings are saved separately for each character.
@@ -18,7 +18,7 @@
 - **Roles:** DPS, Healer, Tank. Your role is automatically detected from your class and primary talent tree and shown in your listing.
 - **PvP UI integration:** enabled by default; ArenaLFG opens beside the PvP window when you open it (H is the default WoW PvP keybinding). Use the main-window checkbox or `/alfg pvp` to toggle the integration. The minimap button and `/alfg` always open ArenaLFG manually.
 - **Topmost window:** ArenaLFG uses the `DIALOG` frame strata and raises itself when opened to stay above most game windows.
-- **Clean chat:** sync traffic is filtered from your chat windows. Listing data is sent as plain text, so anyone who joins the sync channel can read it.
+- **Clean chat:** ArenaLFG sync traffic is filtered from your regular chat windows.
 
 ## Installation
 
@@ -58,19 +58,12 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | `/alfg minimap` | Show or hide the minimap button |
 | `/alfg pvp` | Toggle PvP window integration (enabled by default; also controlled by the main-window checkbox) |
 | `/alfg me` | Print what the addon detects about your character (class, spec, GS, arena teams) |
-| `/alfg comm` | Show sync channel status; retry joining if disconnected |
-| `/alfg global` | Check whether the Global chat parser loaded and whether the Global channel is joined |
-| `/alfg debug` | Toggle debug messages (sent / received data) |
+| `/alfg comm` | Check ArenaLFG connection status and retry if needed |
 | `/alfg clear` | Clear the local list |
 
 ## How it works
 
-3.3.5 addons cannot access the internet, so ArenaLFG syncs through the game itself:
-
-- **Listings** are sent as plain text in a custom channel called `ArenaLFGSync`. The addon joins it automatically, retrying up to three times if the initial join fails. `/alfg comm` checks the connection and retries if disconnected. The channel is removed from your chat windows and its messages and join/leave notices are filtered. The traffic is not private: anyone who joins that channel can see it. Every 60 seconds your listing is re-announced; a listing disappears after about 2.5 minutes without an update. Refresh requests are limited to one every 10 seconds; posters queue responses until their broadcast cooldown ends, then add a short random delay to spread out replies.
-- **Global chat ads** that clearly include a 2v2 marker and partner-seeking wording are parsed locally into provisional listings. They expire after two minutes and are not sent to the ArenaLFG sync channel. Class and race are read from the sender GUID when the client provides it; specialization is inferred from English spec names and common abbreviations. Otherwise, unknown details stay unknown. Parsed ads use a normal party invite rather than the addon sign-up flow.
-- **Sign-ups, invites and declines** are private addon messages sent directly between the two players.
-- ArenaLFG turns the channel messages into listings. Players without the addon who join the channel can read the raw messages. Alliance and Horde use separate lists, as the game does not allow channel chat across factions.
+ArenaLFG shares listings with other users of the addon on your faction. Listings are refreshed while their owners are available and expire when they are no longer current. Global chat ads may appear as temporary listings on your client; imported details are best-effort and are not shared by ArenaLFG. Sign-ups are sent privately to the group leader.
 
 ### Privacy
 
@@ -83,9 +76,9 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 
 ## Troubleshooting
 
-- **"Could not join the sync channel":** the server may restrict custom channels, or you already have the maximum number of channels. Free a channel slot, then run `/alfg comm` to retry joining.
+- **ArenaLFG listings are not appearing:** make sure other players are using the addon too, then run `/alfg comm` to check or retry the connection.
 - **The list stays empty:** the addon is only useful when other players run it too. Ask a friend to install it, post a group, and press the refresh button.
-- **A Global chat ad did not appear:** parsing is heuristic; the ad must be in the `Global` channel and include both a 2v2 marker (such as `2v2` or `2s`) and partner-seeking wording (such as `LFG`, `LF`, or `looking for`).
+- **A Global chat ad did not appear:** only clear 2v2 partner-seeking messages are imported, and some wording may not be recognized.
 - **Your 2v2 team is not detected:** run `/alfg me` and check the arena slots it prints. Open the PvP / arena team frame once, then `/reload`.
 - **The addon does not appear in the AddOns list:** check that the folder is named `ArenaLFG` and contains `ArenaLFG.toc` directly (not another folder inside).
 - **Lua errors:** enable error display with `/console scriptErrors 1` and open an issue with the message.
@@ -99,7 +92,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 
 ## Contributing / bug reports
 
-Issues and pull requests are welcome. When reporting a bug, include your addon version, the output of `/alfg me` and `/alfg comm`, and any Lua error text.
+Issues and pull requests are welcome. When reporting a bug, include your addon version, the output of `/alfg me`, and any Lua error text.
 
 ## License
 

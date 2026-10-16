@@ -70,6 +70,8 @@ local RACE_ALIASES = {
     DRAENEI = { "draenei" },
 }
 
+local QUEUE_MARKERS = { " 2v2 ", " 2s ", " 2 s ", " 2c ", " 2s2 ", " 2c2 " }
+
 local function Normalize(text)
     text = string.lower(text or "")
     text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
@@ -147,13 +149,20 @@ end
 
 local function FindQueuePosition(text)
     local first, firstLength
-    for _, marker in ipairs({ " 2v2 ", " 2s ", " 2 s " }) do
+    for _, marker in ipairs(QUEUE_MARKERS) do
         local position = text:find(marker, 1, true)
         if position and (not first or position < first) then
             first, firstLength = position, #marker
         end
     end
     return first, firstLength
+end
+
+local function HasQueueMarker(text)
+    for _, marker in ipairs(QUEUE_MARKERS) do
+        if text:find(marker, 1, true) then return true end
+    end
+    return false
 end
 
 local function FindOwnerDetails(text, classHint)
@@ -191,12 +200,11 @@ end
 
 function ns.ParseGlobalListing(message, sender, channel, channelName, channelNumber, guid)
     local text = type(message) == "string" and Normalize(message) or ""
-    local mentions2s = text:find(" 2v2 ", 1, true)
-        or text:find(" 2s ", 1, true) or text:find(" 2 s ", 1, true)
+    local mentions2v2 = HasQueueMarker(text)
     local hasIntent = HasIntent(text)
     local isGlobal = IsGlobalChannel(channel, channelName)
 
-    if mentions2s and hasIntent then
+    if mentions2v2 and hasIntent then
         ns.Debug("possible 2v2 ad from " .. tostring(sender) .. " (channelString="
             .. tostring(channel) .. ", channelName=" .. tostring(channelName)
             .. ", channelNumber=" .. tostring(channelNumber)
@@ -210,7 +218,7 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
         return false
     end
 
-    if not mentions2s or not hasIntent then
+    if not mentions2v2 or not hasIntent then
         return false
     end
 
