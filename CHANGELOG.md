@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0
+
+- Import Global chat 2v2 partner ads as temporary local listings, with best-effort class, race, and specialization details.
+- Add faction indicators and improve Global-ad presentation in the group browser.
+- Sort listings by newest post while keeping ArenaLFG listings above imported ads.
+- Improve refresh controls and keep the browser scrollbar visible.
+
 ## 1.2.0
 
 - Show race icons to help identify players from the opposite faction.
