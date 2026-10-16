@@ -570,7 +570,7 @@ local function RefreshGroupView()
 end
 
 function ns.RefreshAll()
-    if not ns.frame then return end
+    if not ns.frame or not ns.frame:IsShown() then return end
     RefreshList()
     RefreshGroupView()
 end

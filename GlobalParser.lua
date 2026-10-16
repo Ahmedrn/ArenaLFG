@@ -61,7 +61,7 @@ local SPEC_ALIASES = {
     R3 = { "subtlety rogue", "subtlety", "subtle rogue", "sub rogue", "sub rog",
         "hemo rogue", "hemo", "rogue sub", "rog sub" },
 
-    C1 = { "discipline priest", "discipline", "disc priest", "disc pri", "dpriest", "dpri",
+    C1 = { "discipline priest", "discipline", "disc priest", "disc pri", "dpriest", "dpri", "dp",
         "d priest", "disc", "priest disc", "pri disc" },
     C2 = { "holy priest", "holy pri", "hpriest", "hpri", "h priest", "holypriest",
         "priest holy", "pri holy" },
@@ -150,6 +150,13 @@ local function Normalize(text)
         return tostring(rating) .. " xp"
     end)
     for _, suffix in ipairs(RATING_SUFFIXES) do
+        text = text:gsub("(%d+)[%.,](%d+)%s*k%s*%+%s*" .. suffix .. "%f[%A]", function(whole, decimal)
+            local rating = math.floor(tonumber(whole .. "." .. decimal) * 1000 + 0.5)
+            return tostring(rating) .. " " .. suffix
+        end)
+        text = text:gsub("(%d+)%s*k%s*%+%s*" .. suffix .. "%f[%A]", function(value)
+            return tostring(tonumber(value) * 1000) .. " " .. suffix
+        end)
         text = text:gsub("(%d+)[%.,](%d+)%s*k?%s*" .. suffix .. "%f[%A]", function(whole, decimal)
             local rating = math.floor(tonumber(whole .. "." .. decimal) * 1000 + 0.5)
             return tostring(rating) .. " " .. suffix
@@ -431,11 +438,17 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
         return false
     end
 
+    local prev = ns.listings[sender]
+    if prev and prev.source == "global" and prev.chatText == message then
+        prev.seen = GetTime()
+        return true
+    end
+
     local text = Normalize(message)
     if HasAlias(text, EXCLUDED_AD_TERMS) then return false end
     local mentions2v2 = HasQueueMarker(text)
     local hasIntent = HasIntent(text)
-    if not hasIntent then return false end
+    if not hasIntent and not mentions2v2 then return false end
 
     local preferredRole, targetSpecs
     if not mentions2v2 then
@@ -467,7 +480,7 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
     local hasTargetSpecs = targetSpecs and next(targetSpecs) ~= nil or false
     local teamRating = ParseTeamRating(senderStats)
     local hasTeam = teamRating ~= nil or HasOwnTeam(ownDetails)
-    local tier = ParseExperienceTier(senderStats)
+    local tier = ParseExperienceTier(text)
     local gs, gsEstimate = ParseEstimatedGearScore(senderStats)
 
     local displayMessage = message:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
@@ -495,6 +508,7 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
         targetAny = targetRole ~= "Any" and not hasTargetSpecs,
         targetSpecs = targetSpecs or {},
         source = "global",
+        chatText = message,
     })
     if ns.DEBUG then
         ns.Debug("parsed Global ad from " .. sender .. ": class=" .. class

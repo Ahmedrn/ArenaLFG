@@ -64,7 +64,7 @@ local function CompleteJoin()
         local cf = _G["ChatFrame" .. i]
         if cf then ChatFrame_RemoveChannel(cf, ns.CHANNEL) end
     end
-    ns.Debug("joined sync channel, id " .. chanId)
+    if ns.DEBUG then ns.Debug("joined sync channel, id " .. chanId) end
     ns.Comm_Request() -- ask others to announce themselves
     if ns.DB then
         if ns.InGroup() or ns.InPvpInstance() then
@@ -119,7 +119,7 @@ function ns.Broadcast()
         lastBroadcastAt = GetTime()
         ns.mine.postedAt = time()
     end
-    ns.Debug("sent listing: " .. tostring(ok and sent))
+    if ns.DEBUG then ns.Debug("sent listing: " .. tostring(ok and sent)) end
 end
 
 function ns.BroadcastRemove()
@@ -154,15 +154,23 @@ local f = CreateFrame("Frame")
 f:RegisterEvent("CHAT_MSG_CHANNEL")
 f:SetScript("OnEvent", function(self, event, msg, sender, lang, channelString)
     if not IsOurChannel(channelString) or not msg then return end
-    ns.Debug("recv from " .. tostring(sender) .. ": " .. msg)
+    if ns.DEBUG then ns.Debug("recv from " .. tostring(sender) .. ": " .. msg) end
     if msg == "ALrm" then
         ns.applied[sender] = nil
         ns.RemoveListing(sender)
     elseif msg == "ALreq" then
         QueueRequestResponse()
     elseif strsub(msg, 1, 4) == "AL1;" then
+        local prev = ns.listings[sender]
+        if prev and prev.wire == msg then
+            prev.seen = GetTime()
+            return
+        end
         local l = ns.Decode(msg, sender)
-        if l then ns.AddListing(l) end
+        if l then
+            l.wire = msg
+            ns.AddListing(l)
+        end
     end
 end)
 
@@ -183,7 +191,7 @@ local af = CreateFrame("Frame")
 af:RegisterEvent("CHAT_MSG_ADDON")
 af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
     if prefix ~= ns.PREFIX or not msg or sender == UnitName("player") then return end
-    ns.Debug("whisper from " .. tostring(sender) .. ": " .. msg)
+    if ns.DEBUG then ns.Debug("whisper from " .. tostring(sender) .. ": " .. msg) end
     if strsub(msg, 1, 3) == "AP;" then
         if not (ns.DB and ns.mine and ns.mine.posted) then return end
         local l = ns.Decode(strsub(msg, 4), sender)
