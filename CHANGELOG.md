@@ -2,7 +2,7 @@
 
 ## 1.3.0
 
-- Improve Global 2v2 ad parsing and skip repeated chat listings; imported ads remain temporary and local.
+- Import Global chat 2v2 partner ads as temporary local listings, with best-effort parsing; improve ad recognition and skip identical repeats.
 - Add faction indicators and improve Global-ad presentation in the group browser.
 - Sort listings by newest post while keeping ArenaLFG listings above imported ads.
 - Improve refresh controls and keep the browser scrollbar visible.

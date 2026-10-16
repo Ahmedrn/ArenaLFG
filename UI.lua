@@ -427,6 +427,18 @@ local function OpenFilterMenu(anchor)
         ns.RefreshAll()
     end })
     EasyMenu(menu, menuFrame, anchor, 0, 0, "MENU")
+    anchor:SetScript("OnUpdate", function(button, elapsed)
+        if IsFocusWithin(button) then
+            button.outsideTime = 0
+        else
+            button.outsideTime = (button.outsideTime or 0) + elapsed
+            if button.outsideTime >= 0.15 then
+                button.outsideTime = 0
+                button:SetScript("OnUpdate", nil)
+                CloseDropDownMenus()
+            end
+        end
+    end)
 end
 
 ----------------------------------------------------------------------

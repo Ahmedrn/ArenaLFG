@@ -42,7 +42,7 @@ local SPEC_ALIASES = {
     P1 = { "holy paladin", "holy pala", "holy pal", "holy pally", "hpala", "hpal", "hpally",
         "h pala", "h pal", "holypala", "paladin holy", "pala holy" },
     P2 = { "protection paladin", "prot paladin", "prot pala", "prot pal", "prot pally",
-        "ppala", "ppal", "ppally", "protpala", "paladin prot", "pala prot" },
+        "ppala", "ppal", "ppally", "protpala", "preg", "paladin prot", "pala prot" },
     P3 = { "retribution paladin", "retribution", "ret paladin", "ret pala", "ret pal", "ret pally",
         "retri paladin", "retri pala", "retri", "ret", "rpala", "rpal", "rpally",
         "paladin ret", "pala ret" },
@@ -58,14 +58,14 @@ local SPEC_ALIASES = {
         "ass rogue", "assa rog", "assas", "assa", "mutilate rogue", "mutilate", "mut rogue",
         "muti rogue", "muti", "rogue assa", "rog assa" },
     R2 = { "combat rogue", "combat rog", "cbt rogue", "swords rogue", "combat", "rogue combat" },
-    R3 = { "subtlety rogue", "subtlety", "subtle rogue", "sub rogue", "sub rog",
+    R3 = { "subtlety rogue", "subtlety", "subtle rogue", "sub rogue", "sub rog", "sub",
         "hemo rogue", "hemo", "rogue sub", "rog sub" },
 
     C1 = { "discipline priest", "discipline", "disc priest", "disc pri", "dpriest", "dpri", "dp",
         "d priest", "disc", "priest disc", "pri disc" },
     C2 = { "holy priest", "holy pri", "hpriest", "hpri", "h priest", "holypriest",
         "priest holy", "pri holy" },
-    C3 = { "shadow priest", "shadow pri", "spriest", "spr", "spri", "s priest", "shadowpriest",
+    C3 = { "shadow priest", "shadow pri", "spriest", "spr", "sp", "spri", "s priest", "shadowpriest",
         "shadow", "priest shadow", "pri shadow" },
 
     D1 = { "blood death knight", "blood deathknight", "blood dk", "bdk", "b dk",
@@ -80,7 +80,7 @@ local SPEC_ALIASES = {
         "elemental", "elem", "ele", "shaman ele", "sham ele" },
     S2 = { "enhancement shaman", "enhancement shammy", "enhance shaman", "enhance sham",
         "enhance shammy", "enh shaman", "enh sham", "enh shammy", "ensham", "enhsham",
-        "enhancement", "enhance", "enh", "shaman enh", "sham enh" },
+        "enhancement", "enhance", "enha", "enh", "shaman enh", "sham enh" },
     S3 = { "restoration shaman", "restoration shammy", "resto shaman", "resto sham", "resto shammy",
         "rshaman", "rsham", "rshammy", "r shaman", "r sham", "r shammy",
         "shaman resto", "sham resto" },
@@ -136,7 +136,9 @@ local GEAR_SCORE_ESTIMATES = {
     { aliases = { "starter" }, gs = 5600, label = "~5600" },
     { aliases = { "bis" }, gs = 6000, label = "6000+" },
 }
-local EXCLUDED_AD_TERMS = { "wts", "wtb", "selling", "boost", "carry", "recruiting" }
+local EXCLUDED_AD_TERMS = {
+    "wts", "wtb", "selling", "boost", "carry", "recruiting", "coach", "coaching",
+}
 local RATING_SUFFIXES = { "xp", "exp", "cr" }
 
 local function Normalize(text)
