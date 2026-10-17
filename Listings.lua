@@ -77,11 +77,52 @@ function ns.Changed()
     if ns.RefreshAll then ns.RefreshAll() end
 end
 
+local recentAlerts = {}
+
+function ns.CheckPartnerMatch(l)
+    if not (ns.DB and ns.DB.matchAlerts) then return end
+    if not l or l.name == UnitName("player") then return end
+    if ns.InGroup and ns.InGroup() then return end
+    if ns.InPvpInstance and ns.InPvpInstance() then return end
+
+    local now = GetTime()
+    if recentAlerts[l.name] and now - recentAlerts[l.name] < 600 then
+        return
+    end
+
+    local mySpec = ns.GetMySpecId and ns.GetMySpecId()
+    local myRole = ns.mine and ns.mine.role or (ns.GetSuggestedRole and ns.GetSuggestedRole()) or "DPS"
+    local isMatch = false
+
+    if l.targetSpecs and mySpec and l.targetSpecs[mySpec] then
+        isMatch = true
+    elseif l.targetAny and l.targetRole == myRole then
+        isMatch = true
+    end
+
+    if isMatch then
+        recentAlerts[l.name] = now
+        local c = RAID_CLASS_COLORS[l.class] or { r = 1, g = 1, b = 1 }
+        local namePart = string.format("|cff%02x%02x%02x%s|r",
+            math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255), l.name)
+        local sourceTag = (l.source == "global") and "|cff64b5f6[Chat Ad]|r" or "|cff69f0ae[ArenaLFG]|r"
+        ns.Print(string.format("%s %s (%s) is looking for %s!",
+            sourceTag, namePart, l.spec or l.class, ns.GetMySpec and ns.GetMySpec() or "your spec"))
+        ns.PlayAlertSound("ReadyCheck")
+        if RaidNotice_AddMessage and RaidWarningFrame then
+            RaidNotice_AddMessage(RaidWarningFrame,
+                string.format("|cff33ff99[ArenaLFG]|r %s (%s) wants %s!", l.name, l.spec or l.class, ns.GetMySpec and ns.GetMySpec() or "your spec"),
+                ChatTypeInfo["RAID_WARNING"])
+        end
+    end
+end
+
 function ns.AddListing(l)
     local previous = ns.listings[l.name]
     l.listedAt = previous and previous.source == l.source and previous.listedAt or GetTime()
     l.seen = GetTime()
     ns.listings[l.name] = l
+    ns.CheckPartnerMatch(l)
     ns.Changed()
 end
 

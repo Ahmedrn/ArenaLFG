@@ -60,6 +60,9 @@ local defaults = {
     announce = false,
     announceLastAt = 0,
     pvpIntegration = true,
+    soundAlerts = true,
+    matchAlerts = true,
+    alertSound = "ReadyCheck",
     minimap = { angle = 200, hide = false },
     mine = {
         role = "DPS", gs = 0,
@@ -70,6 +73,12 @@ local defaults = {
     characters = {},
     filters = { role = "Any", team = "Any", seasonal = "Any", tenGames = false },
 }
+
+function ns.PlayAlertSound(soundName)
+    if not (ns.DB and ns.DB.soundAlerts) then return end
+    local snd = soundName or (ns.DB and ns.DB.alertSound) or "ReadyCheck"
+    pcall(PlaySound, snd)
+end
 
 local function CopyDefaults(src, dst)
     for k, v in pairs(src) do
@@ -218,6 +227,9 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg global [channel] - Show or set the chat channel to parse (default: Global).")
         ns.Print("/alfg announce on|off - Enable or disable Global group announcements.")
         ns.Print("/alfg announce prompt - Show the announcement consent prompt again.")
+        ns.Print("/alfg sound - Toggle audio alerts on/off.")
+        ns.Print("/alfg match - Toggle partner match alerts on/off.")
+        ns.Print("/alfg sound test - Test play alert sounds.")
         ns.Print("/alfg debug - Toggle debug messages.")
         ns.Print("/alfg clear - Clear the local group list.")
     elseif msg == "announce on" then
@@ -234,6 +246,22 @@ SlashCmdList["ARENALFG"] = function(msg)
     elseif msg == "clear" then
         wipe(ns.listings)
         ns.Changed()
+    elseif msg == "sound" then
+        ns.DB.soundAlerts = not ns.DB.soundAlerts
+        if ns.frame and ns.frame.soundCheck then ns.frame.soundCheck:SetChecked(ns.DB.soundAlerts) end
+        ns.Print("Audio alerts " .. (ns.DB.soundAlerts and "enabled" or "disabled") .. ".")
+    elseif msg == "match" then
+        ns.DB.matchAlerts = not ns.DB.matchAlerts
+        if ns.frame and ns.frame.matchCheck then ns.frame.matchCheck:SetChecked(ns.DB.matchAlerts) end
+        ns.Print("Partner match alerts " .. (ns.DB.matchAlerts and "enabled" or "disabled") .. ".")
+    elseif msg == "sound test" then
+        ns.PlayAlertSound("ReadyCheck")
+        ns.Print("Playing test alert sound.")
+        if RaidNotice_AddMessage and RaidWarningFrame then
+            RaidNotice_AddMessage(RaidWarningFrame,
+                "|cff33ff99[ArenaLFG]|r Test alert notification!",
+                ChatTypeInfo["RAID_WARNING"])
+        end
     elseif msg == "debug" then
         ns.DEBUG = not ns.DEBUG
         ns.DB.debug = ns.DEBUG

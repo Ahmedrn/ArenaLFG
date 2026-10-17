@@ -555,6 +555,62 @@ end
 ----------------------------------------------------------------------
 -- Left side, view 1: my group (banner + applicants), like retail
 ----------------------------------------------------------------------
+function ns.OpenShareMenu(anchor)
+    local inParty = (GetNumPartyMembers() > 0) or (GetNumRaidMembers() > 0)
+    local inInstance, instanceType = IsInInstance()
+    local isArena = inInstance and (instanceType == "arena" or instanceType == "pvp")
+    local channelName = ns.DB and ns.DB.globalChannel or "Global"
+    local channelId = tonumber((GetChannelName(channelName))) or 0
+    local targetName = UnitIsPlayer("target") and UnitName("target")
+
+    if not (isArena or inParty) and not (targetName and targetName ~= UnitName("player")) then
+        if channelId > 0 then
+            ChatFrame_OpenChat("/" .. channelId .. " Know a 2v2 partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+        else
+            ns.Print("Join your configured Global channel before sharing ArenaLFG.")
+        end
+        return
+    end
+
+    local menu = {
+        { text = "Share ArenaLFG", isTitle = true, notCheckable = true },
+    }
+
+    if isArena or inParty then
+        local label = isArena and "Party / Arena (SoloQ)" or "Party / Group"
+        tinsert(menu, {
+            text = label,
+            notCheckable = true,
+            func = function()
+                ChatFrame_OpenChat("/p Looking for a 2v2 partner? Get the ArenaLFG addon: https://warperia.com/addon-wotlk/arenalfg/")
+            end,
+        })
+    end
+
+    if channelId > 0 then
+        tinsert(menu, {
+            text = "Global (" .. channelName .. ")",
+            notCheckable = true,
+            func = function()
+                ChatFrame_OpenChat("/" .. channelId .. " Know a 2v2 partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+            end,
+        })
+    end
+
+    if targetName and targetName ~= UnitName("player") then
+        tinsert(menu, {
+            text = "Whisper " .. targetName,
+            notCheckable = true,
+            func = function()
+                ChatFrame_OpenChat("/w " .. targetName .. " Know a 2v2 partner? Check out ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+            end,
+        })
+    end
+
+    tinsert(menu, { text = "Cancel", notCheckable = true })
+    EasyMenu(menu, menuFrame, anchor or "cursor", 0, 0, "MENU")
+end
+
 local function BuildGroupView(parent, f)
     local g = CreateFrame("Frame", nil, parent)
     g:SetAllPoints(parent)
@@ -693,16 +749,7 @@ local function BuildGroupView(parent, f)
     w.delist:SetScript("OnClick", function() ns.RemoveMine() end)
     w.share = MakeButton(g, "Share", 64, 24)
     w.share:SetPoint("LEFT", w.delist, "RIGHT", 6, 0)
-    w.share:SetScript("OnClick", function()
-        local channelName = ns.DB and ns.DB.globalChannel
-        local channelId = type(channelName) == "string" and tonumber((GetChannelName(channelName))) or 0
-        if not channelId or channelId <= 0 then
-            ns.Print("Join your configured Global channel before sharing ArenaLFG.")
-            return
-        end
-        ChatFrame_OpenChat("/" .. channelId
-            .. " Know a 2v2 partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
-    end)
+    w.share:SetScript("OnClick", function(self) ns.OpenShareMenu(self) end)
     w.edit = MakeButton(g, "Edit", 64, 24)
     w.edit:SetPoint("BOTTOMRIGHT", -8, 10)
     w.edit:SetScript("OnClick", function() ns.EditMine() end)
@@ -1053,6 +1100,32 @@ function ns.BuildUI()
     end)
     f.pvpCheck:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 24, 16)
     f.pvpCheck:SetChecked(ns.DB.pvpIntegration)
+
+    f.soundCheck = MakeCheck(f, "Sound alerts", function(enabled)
+        ns.DB.soundAlerts = enabled
+    end)
+    f.soundCheck:SetPoint("LEFT", f.pvpCheck, "RIGHT", 130, 0)
+    f.soundCheck:SetChecked(ns.DB.soundAlerts)
+    f.soundCheck:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
+        GameTooltip:AddLine("Sound Alerts", 1, 0.82, 0)
+        GameTooltip:AddLine("Play audio alerts when someone signs up for your group or invites you.", 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    f.soundCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    f.matchCheck = MakeCheck(f, "Match alerts", function(enabled)
+        ns.DB.matchAlerts = enabled
+    end)
+    f.matchCheck:SetPoint("LEFT", f.soundCheck, "RIGHT", 75, 0)
+    f.matchCheck:SetChecked(ns.DB.matchAlerts)
+    f.matchCheck:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
+        GameTooltip:AddLine("Partner Match Alerts", 1, 0.82, 0)
+        GameTooltip:AddLine("Notify on screen and in chat when a Global chat ad or ArenaLFG group is looking for your exact spec.", 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    f.matchCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     local listedHeader = MakeLabel(right, "Listed", 216, -55, "GameFontDisableSmall")
     listedHeader:SetWidth(80)

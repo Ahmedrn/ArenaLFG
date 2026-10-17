@@ -326,8 +326,11 @@ af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
         if l then
             ns.AddApplicant(l)
             ns.Print(sender .. " signed up for your group.")
-            if not (ns.frame and ns.frame:IsShown()) then
-                PlaySound("TellMessage")
+            ns.PlayAlertSound("ReadyCheck")
+            if RaidNotice_AddMessage and RaidWarningFrame then
+                RaidNotice_AddMessage(RaidWarningFrame,
+                    "|cff33ff99[ArenaLFG]|r " .. sender .. " signed up for your group!",
+                    ChatTypeInfo["RAID_WARNING"])
             end
         end
     elseif msg == "CANCEL" then
@@ -336,11 +339,18 @@ af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
     elseif msg == "INV" then
         if ns.applied[sender] ~= "pending" then return end
         ns.applied[sender] = "invited"
-        ns.Print(sender .. " invited you to their group.")
+        ns.Print(sender .. " invited you to their group!")
+        ns.PlayAlertSound("PVPTHROUGHQUEUE")
+        if RaidNotice_AddMessage and RaidWarningFrame then
+            RaidNotice_AddMessage(RaidWarningFrame,
+                "|cff33ff99[ArenaLFG]|r " .. sender .. " invited you to their group!",
+                ChatTypeInfo["RAID_WARNING"])
+        end
         ns.Changed()
     elseif msg == "DEC" then
         if ns.applied[sender] ~= "pending" then return end
         ns.applied[sender] = "declined"
+        ns.Print(sender .. " declined your sign-up.")
         ns.Changed()
     end
 end)
