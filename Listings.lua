@@ -9,6 +9,34 @@ local SEP = ";"
 local function clean(s) return (tostring(s or ""):gsub("[|;]", "/")) end
 local function b(v) return v and "1" or "0" end
 
+-- Link detection, shared by synced listings and the Global chat parser.
+local URL_TLDS = {
+    "com", "net", "org", "gg", "tv", "io", "ly", "gl", "xyz", "info", "shop",
+    "store", "site", "link", "club", "online", "ru", "eu", "fr", "de", "cc", "app",
+}
+
+function ns.ContainsUrl(text)
+    if type(text) ~= "string" or text == "" then return false end
+    local s = string.lower(text)
+    s = s:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+    s = s:gsub("|T.-|t", ""):gsub("|H.-|h(.-)|h", "%1")
+    if s:find("https?:") or s:find("%f[%w]www%s*%.") then return true end
+    if s:find("discord%s*%.%s*gg") or s:find("discord%s*%.%s*com")
+        or s:find("discordapp") or s:find("discord%s*dot") then return true end
+    if s:find("[%[%(%{]%s*dot%s*[%]%)%}]") then return true end -- "[dot]" / "(dot)"
+    if s:find("%d+%.%d+%.%d+%.%d+") then return true end         -- IP address
+    if s:find("[%w%-]%.%a%a+/%w") then return true end           -- anything.xx/path
+    for _, tld in ipairs(URL_TLDS) do
+        if s:find("[%w%-]%." .. tld .. "%f[%A]") then return true end
+    end
+    return false
+end
+
+local function NoUrl(text, fallback)
+    if ns.ContainsUrl(text) then return fallback end
+    return text
+end
+
 local function EncodeTargetSpecs(l)
     if l.targetAny then return "ANY" end
     local ids = {}
@@ -53,7 +81,7 @@ function ns.Decode(msg, sender)
     return {
         name       = sender,
         class      = parts[2],
-        spec       = strsub(parts[3], 1, 20),
+        spec       = NoUrl(strsub(parts[3], 1, 20), "Unknown"),
         role       = role,
         gs         = math.min(tonumber(parts[5]) or 0, 9999),
         hasTeam    = parts[6] == "1",
@@ -61,7 +89,7 @@ function ns.Decode(msg, sender)
         tier       = math.max(1, math.min(tonumber(parts[8]) or 1, #ns.TIERS)),
         seasonal   = parts[9] == "1",
         tenGames   = parts[10] == "1",
-        note       = strsub(parts[11], 1, 60),
+        note       = NoUrl(strsub(parts[11], 1, 60), ""),
         targetRole = targetRole,
         targetAny = targetAny,
         targetSpecs = targetSpecs,

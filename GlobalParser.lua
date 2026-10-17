@@ -137,7 +137,7 @@ local TARGET_ROLE_ALIASES = {
 local GEAR_SCORE_ESTIMATES = {
     { aliases = { "starter" }, gs = 5600, label = "~5600" },
     { aliases = { "relent", "relentless", "furious" }, gs = 5750, label = "~5750" },
-    { aliases = { "bis", "wrathful", "wf" }, gs = 6000, label = "6000+" },
+    { aliases = { "bis", "biss", "wrathful", "wf" }, gs = 6000, label = "6000+" },
 }
 local EXCLUDED_AD_TERMS = {
     "wts", "wtb", "selling", "boost", "carry", "recruiting", "coach", "coaching",
@@ -171,6 +171,24 @@ local function Normalize(text)
         end)
         text = text:gsub("(%d)%s*" .. suffix .. "%f[%A]", "%1 " .. suffix)
     end
+    -- "2k+" / "2.2k+" with no rating keyword is an experience requirement, like "2.4+"
+    -- above. Only 1k-3k: "6k+" is a gearscore and is left for the GS parser.
+    text = text:gsub("%f[%d](%d+)[%.,](%d)%s*k%s*%+", function(whole, decimal)
+        local rating = tonumber(whole) * 1000 + tonumber(decimal) * 100
+        if rating >= 1000 and rating <= 3000 then return tostring(rating) .. " xp" end
+    end)
+    text = text:gsub("%f[%d](%d+)%s*k%s*%+", function(whole)
+        local rating = tonumber(whole) * 1000
+        if rating >= 1000 and rating <= 3000 then return tostring(rating) .. " xp" end
+    end)
+    -- Remaining "5.6k" / "5k" / "10k" shorthand: expand it before punctuation is
+    -- stripped, otherwise "5.6k" becomes "5 6k" and the decimal is lost.
+    text = text:gsub("%f[%d](%d+)[%.,](%d)%s*k%f[%A]", function(whole, decimal)
+        return tostring(tonumber(whole) * 1000 + tonumber(decimal) * 100)
+    end)
+    text = text:gsub("%f[%d](%d+)%s*k%f[%A]", function(whole)
+        return tostring(tonumber(whole) * 1000)
+    end)
     text = text:gsub("(%f[%a]lf[gm]?)(2[svc]?2?%f[%A])", "%1 %2")
     text = text:gsub("(%f[%a]need)(2[svc]?2?%f[%A])", "%1 %2")
     text = text:gsub("(%d)(%a%a+)", "%1 %2")
@@ -290,6 +308,9 @@ local function ParseExperienceTier(text)
     local rating = ValidRating(tonumber(text:match(" (%d+) xp ")))
         or ValidRating(tonumber(text:match(" (%d+) exp ")))
         or ValidRating(tonumber(text:match(" (%d+) experience ")))
+        or ValidRating(tonumber(text:match(" xp (%d+) ")))
+        or ValidRating(tonumber(text:match(" exp (%d+) ")))
+        or ValidRating(tonumber(text:match(" experience (%d+) ")))
     if not rating then return nil end
     if rating < 1500 then return 2 end
     if rating < 1800 then return 3 end
@@ -304,30 +325,23 @@ local function ParseTeamRating(text)
         or ValidRating(tonumber(text:match(" (%d+) current rating ")))
 end
 
+-- Gearscore has to be told apart from ratings and experience (up to ~3000), so a
+-- number with no "gs" next to it must be 4500 or more. Next to "gs" it may be lower.
 local function ParseNumericGearScore(text)
     if not text then return end
-    local whole, dec = text:match(" (%d)[%.,](%d)%s*k?%s*gs ")
-    if not whole then
-        whole, dec = text:match(" (%d)[%.,](%d)%s*k ")
+    local marked = text:match(" (%d%d%d%d) gs ")
+        or text:match(" gs (%d%d%d%d) ")
+        or text:match(" gearscore (%d%d%d%d) ")
+        or text:match(" (%d%d%d%d) gearscore ")
+    local value = tonumber(marked)
+    if value and value >= 3000 and value <= 6900 then
+        return value, tostring(value)
     end
-    if whole and dec then
-        local val = tonumber(whole) * 1000 + tonumber(dec) * 100
-        if val >= 2000 and val <= 7000 then return val, tostring(val) end
-    end
-    local kGs = text:match(" (%d)%s*k%s*gs ") or text:match(" (%d)%s*k ")
-    if kGs then
-        local val = tonumber(kGs) * 1000
-        if val >= 2000 and val <= 7000 then return val, tostring(val) end
-    end
-    local rawGs = text:match(" (%d%d%d%d)%s*gs ")
-    if rawGs then
-        local val = tonumber(rawGs)
-        if val and val >= 3000 and val <= 6900 then return val, tostring(val) end
-    end
-    local looseGs = text:match(" (%d%d%d%d) ")
-    if looseGs then
-        local val = tonumber(looseGs)
-        if val and val >= 4500 and val <= 6900 then return val, tostring(val) end
+    for number in text:gmatch("%f[%d]%d%d%d%d%f[%D]") do
+        value = tonumber(number)
+        if value >= 4500 and value <= 6900 then
+            return value, tostring(value)
+        end
     end
 end
 
@@ -474,6 +488,9 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
     if not IsGlobalChannel(ns.DB and ns.DB.globalChannel or "Global", channel, channelName) then
         return false
     end
+
+    -- Ads that contain a link (discord invites, websites, boosting services) are ignored
+    if ns.ContainsUrl and ns.ContainsUrl(message) then return false end
 
     local prev = ns.listings[sender]
     if prev and prev.source == "global" and prev.chatText == message then
