@@ -28,6 +28,54 @@ local ROLE_TEXT = {
     Tank   = "|cff60a0ffTank|r",
 }
 
+local ROLE_ICONS = {
+    Tank   = { 0, 19/64, 22/64, 41/64 },
+    Healer = { 20/64, 39/64, 1/64, 20/64 },
+    DPS    = { 20/64, 39/64, 22/64, 41/64 },
+}
+
+local function GetRoleCoords(role)
+    if GetTexCoordsForRoleSmallCircle then
+        local r = (role == "DPS" and "DAMAGER") or (role == "Tank" and "TANK") or (role == "Healer" and "HEALER")
+        if r then
+            local ok, left, right, top, bottom = pcall(GetTexCoordsForRoleSmallCircle, r)
+            if ok and left then return left, right, top, bottom end
+        end
+    end
+    local c = ROLE_ICONS[role]
+    if c then return c[1], c[2], c[3], c[4] end
+end
+
+local function SetRoleIcon(tex, role)
+    if not tex then return false end
+    if not role or role == "Any" or role == "Unknown" then
+        tex:Hide()
+        return false
+    end
+    local l, r, t, b = GetRoleCoords(role)
+    if l then
+        tex:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES")
+        tex:SetTexCoord(l, r, t, b)
+        tex:Show()
+        return true
+    else
+        tex:Hide()
+        return false
+    end
+end
+
+local function GetRoleMarkup(role)
+    local l, r, t, b = GetRoleCoords(role)
+    if l then
+        local left = math.floor(l * 64)
+        local right = math.floor(r * 64)
+        local top = math.floor(t * 64)
+        local bottom = math.floor(b * 64)
+        return string.format("|TInterface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES:14:14:0:0:64:64:%d:%d:%d:%d|t ", left, right, top, bottom)
+    end
+    return ""
+end
+
 local uid = 0
 local function NextName(prefix) uid = uid + 1; return "ArenaLFG" .. prefix .. uid end
 
@@ -43,8 +91,8 @@ local function MakePanel(parent, w, h)
         tile = true, tileSize = 16, edgeSize = 16,
         insets = { left = 4, right = 4, top = 4, bottom = 4 },
     })
-    p:SetBackdropColor(0, 0, 0, 0.6)
-    p:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+    p:SetBackdropColor(0.04, 0.04, 0.06, 0.94)
+    p:SetBackdropBorderColor(0.35, 0.38, 0.45, 0.85)
     return p
 end
 
@@ -52,7 +100,7 @@ local function SetClassIcon(tex, class)
     local tc = CLASS_ICON_TCOORDS[class]
     if not tc then
         tex:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-        tex:SetTexCoord(0, 1, 0, 1)
+        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         return
     end
     tex:SetTexture(CLASS_TEX)
@@ -63,7 +111,7 @@ local function SetSpecIcon(tex, class)
     local specIcon = ns.GetMySpecIcon()
     if specIcon then
         tex:SetTexture("Interface\\Icons\\" .. specIcon)
-        tex:SetTexCoord(0, 1, 0, 1)
+        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     else
         SetClassIcon(tex, class)
     end
@@ -73,7 +121,7 @@ local function SetListingSpecIcon(tex, listing)
     local specIcon = ns.GetSpecIcon(listing.class, listing.specId)
     if specIcon then
         tex:SetTexture("Interface\\Icons\\" .. specIcon)
-        tex:SetTexCoord(0, 1, 0, 1)
+        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     else
         SetClassIcon(tex, listing.class)
     end
@@ -195,33 +243,35 @@ local function ShowTooltip(row)
     local c = RAID_CLASS_COLORS[l.class] or { r = 1, g = 1, b = 1 }
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     GameTooltip:AddLine(ns.ListingTitle(l), 1, 0.82, 0, true)
-    GameTooltip:AddLine(l.name .. " - " .. l.spec .. " " .. l.role, c.r, c.g, c.b)
+    local roleMarkup = GetRoleMarkup(l.role)
+    GameTooltip:AddLine(roleMarkup .. l.name .. "  -  " .. l.spec .. " " .. l.role, c.r, c.g, c.b)
     if l.source == "global" then
-        GameTooltip:AddLine("Parsed from chat; details may be incomplete.", 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine("Parsed from chat; details may be incomplete.", 0.7, 0.7, 0.7, true)
     end
     local raceName = ns.GetRaceName(l.race)
-    if raceName then GameTooltip:AddLine("Race: " .. raceName, 0.8, 0.8, 0.8) end
+    if raceName then GameTooltip:AddDoubleLine("Race", raceName, 0.7, 0.7, 0.7, 1, 1, 1) end
     local partnerSpecs = ns.GetPartnerSpecNames(l)
     if #partnerSpecs > 0 then
-        GameTooltip:AddLine("Looking for: " .. table.concat(partnerSpecs, ", "), 0.7, 0.9, 1, true)
+        GameTooltip:AddLine("Looking for: |cff80d8ff" .. table.concat(partnerSpecs, ", ") .. "|r", 0.7, 0.9, 1, true)
     end
-    GameTooltip:AddLine("Experience: " .. (ns.TIERS[l.tier] or "?"), 0.8, 0.8, 0.8)
+    GameTooltip:AddDoubleLine("Experience", ns.TIERS[l.tier] or "?", 0.7, 0.7, 0.7, 1, 1, 1)
     local gearScore = l.gsEstimate
-        and (l.gsEstimate .. " (estimated from chat wording)")
-        or (l.gs > 0 and l.gs or "not set")
-    GameTooltip:AddLine("Gearscore: " .. gearScore, 0.8, 0.8, 0.8)
+        and (l.gsEstimate .. " (chat est.)")
+        or (l.gs > 0 and tostring(l.gs) or "not set")
+    GameTooltip:AddDoubleLine("Gearscore", gearScore, 0.7, 0.7, 0.7, 0.3, 1, 0.3)
     if l.teamKnown == false then
-        GameTooltip:AddLine("Team status not detected from chat", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("Team status not detected from chat", 0.6, 0.6, 0.6)
     elseif l.hasTeam and l.teamRating > 0 then
-        GameTooltip:AddLine("Has a 2v2 team, rating " .. l.teamRating, 0.2, 1, 0.2)
+        GameTooltip:AddDoubleLine("2v2 Team", "Rating " .. l.teamRating, 0.7, 0.7, 0.7, 1, 0.82, 0)
     elseif l.hasTeam then
-        GameTooltip:AddLine("Has a 2v2 team; rating not stated", 0.2, 1, 0.2)
+        GameTooltip:AddLine("Has a 2v2 team (rating not stated)", 0.2, 1, 0.2)
     else
-        GameTooltip:AddLine("No team yet", 0.8, 0.8, 0.8)
+        GameTooltip:AddLine("No 2v2 team yet", 0.6, 0.6, 0.6)
     end
-    if l.seasonal then GameTooltip:AddLine("Seasonal character", 0, 0.8, 1) end
+    if l.seasonal then GameTooltip:AddLine("Seasonal character", 0, 0.85, 1) end
     if l.tenGames then GameTooltip:AddLine("Only wants 10 games (arena points)", 1, 0.82, 0) end
-    GameTooltip:AddLine("Left-click: select. Right-click: menu.", 0.5, 0.5, 0.5)
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine("|cff888888Left-click: select   |   Right-click: options|r", 0.5, 0.5, 0.5)
     GameTooltip:Show()
 end
 
@@ -254,49 +304,75 @@ local function BuildRow(parent, i)
     local row = CreateFrame("Button", nil, parent)
     row:SetWidth(508); row:SetHeight(ROW_H)
     row:SetPoint("TOPLEFT", parent, "TOPLEFT", 8, -64 - (i - 1) * ROW_H)
-    row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
     row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+
+    row.bg = row:CreateTexture(nil, "BACKGROUND")
+    row.bg:SetAllPoints()
+    row.bg:SetTexture(1, 1, 1, (i % 2 == 0) and 0.025 or 0.055)
+
+    row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    local hl = row:GetHighlightTexture()
+    if hl then
+        hl:SetVertexColor(1, 1, 1)
+        hl:SetAlpha(0.12)
+    end
 
     row.sel = row:CreateTexture(nil, "BACKGROUND")
     row.sel:SetAllPoints()
     row.sel:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
     row.sel:SetBlendMode("ADD")
-    row.sel:SetVertexColor(1, 0.82, 0)
-    row.sel:SetAlpha(0.5)
+    row.sel:SetVertexColor(0.2, 0.45, 0.85)
+    row.sel:SetAlpha(0.25)
     row.sel:Hide()
+
+    row.selIndicator = row:CreateTexture(nil, "OVERLAY")
+    row.selIndicator:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    row.selIndicator:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+    row.selIndicator:SetWidth(3)
+    row.selIndicator:SetTexture(1, 0.82, 0, 0.95)
+    row.selIndicator:Hide()
 
     row.line = row:CreateTexture(nil, "BORDER")
     row.line:SetHeight(1)
-    row.line:SetPoint("BOTTOMLEFT"); row.line:SetPoint("BOTTOMRIGHT")
-    row.line:SetTexture(1, 1, 1, 0.08)
+    row.line:SetPoint("BOTTOMLEFT", 2, 0); row.line:SetPoint("BOTTOMRIGHT", -2, 0)
+    row.line:SetTexture(1, 1, 1, 0.06)
 
     row.faction = row:CreateTexture(nil, "OVERLAY")
     row.faction:SetWidth(FACTION_SIZE); row.faction:SetHeight(FACTION_SIZE)
-    row.faction:SetPoint("LEFT", row, "LEFT", 3, 0)
+    row.faction:SetPoint("LEFT", row, "LEFT", 4, 0)
 
     row.title = row:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    row.title:SetPoint("TOPLEFT", 8, -5); row.title:SetWidth(400); row.title:SetHeight(14)
+    row.title:SetPoint("TOPLEFT", 8, -5); row.title:SetWidth(330); row.title:SetHeight(14)
     row.title:SetJustifyH("LEFT")
 
     row.sub = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    row.sub:SetPoint("TOPLEFT", 8, -21); row.sub:SetWidth(295); row.sub:SetHeight(12)
+    row.sub:SetPoint("TOPLEFT", 8, -21); row.sub:SetWidth(300); row.sub:SetHeight(12)
     row.sub:SetJustifyH("LEFT")
     row.sub:SetTextColor(0.65, 0.65, 0.65)
 
     row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetWidth(24); row.icon:SetHeight(24)
-    row.icon:SetPoint("TOPRIGHT", -6, -7)
+    row.icon:SetWidth(26); row.icon:SetHeight(26)
+    row.icon:SetPoint("TOPRIGHT", -6, -6)
+
+    row.iconBorder = row:CreateTexture(nil, "BORDER")
+    row.iconBorder:SetPoint("TOPLEFT", row.icon, -1, 1)
+    row.iconBorder:SetPoint("BOTTOMRIGHT", row.icon, 1, -1)
+    row.iconBorder:SetTexture(0, 0, 0, 0.8)
+
+    row.roleIcon = row:CreateTexture(nil, "ARTWORK")
+    row.roleIcon:SetWidth(16); row.roleIcon:SetHeight(16)
+    row.roleIcon:SetPoint("TOPRIGHT", -36, -6)
 
     row.role = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    row.role:SetPoint("TOPRIGHT", -36, -6); row.role:SetWidth(60); row.role:SetHeight(12)
+    row.role:SetPoint("RIGHT", row.roleIcon, "LEFT", -4, 0); row.role:SetWidth(50); row.role:SetHeight(14)
     row.role:SetJustifyH("RIGHT")
 
     row.status = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    row.status:SetPoint("TOPRIGHT", -36, -21); row.status:SetWidth(80); row.status:SetHeight(12)
+    row.status:SetPoint("TOPRIGHT", -36, -22); row.status:SetWidth(85); row.status:SetHeight(12)
     row.status:SetJustifyH("RIGHT")
 
     row.age = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    row.age:SetPoint("TOPRIGHT", -120, -21); row.age:SetWidth(80); row.age:SetHeight(12)
+    row.age:SetPoint("RIGHT", row.status, "LEFT", -8, 0); row.age:SetWidth(75); row.age:SetHeight(12)
     row.age:SetJustifyH("RIGHT")
     row.age:SetTextColor(0.65, 0.65, 0.65)
 
@@ -349,6 +425,7 @@ local function RefreshList()
         if l then
             row.data = l
             SetListingSpecIcon(row.icon, l)
+            SetRoleIcon(row.roleIcon, l.role)
             local faction = ns.GetFaction(l.race)
             local textX = 8
             if faction and FACTION_COORDS[faction] then
@@ -362,35 +439,69 @@ local function RefreshList()
             end
             row.title:ClearAllPoints()
             row.title:SetPoint("TOPLEFT", textX, -5)
-            row.title:SetWidth(408 - textX)
+            row.title:SetWidth(330 - textX)
             row.sub:ClearAllPoints()
             row.sub:SetPoint("TOPLEFT", textX, -21)
-            row.sub:SetWidth(303 - textX)
+            row.sub:SetWidth(300 - textX)
             local c = RAID_CLASS_COLORS[l.class] or { r = 1, g = 1, b = 1 }
-            row.title:SetText(FactionRaceMarkup(l.race) .. string.format("|cff%02x%02x%02x%s|r  %s",
-                math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255),
-                l.name, ns.ListingTitle(l)))
-            local teamText = l.teamKnown == false and "Team ?"
-                or (l.hasTeam and (l.teamRating > 0 and ("Team " .. l.teamRating) or "Has team") or "No team")
-            local sub = "Exp: " .. (ns.TIERS[l.tier] or "?")
-                .. "   " .. teamText
-            if l.gs > 0 then sub = sub .. "   GS " .. (l.gsEstimate or l.gs) end
-            if l.seasonal then sub = sub .. "   Seasonal" end
-            if l.tenGames then sub = sub .. "   10 games" end
-            row.sub:SetText(sub)
+            local namePart = string.format("|cff%02x%02x%02x%s|r",
+                math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255), l.name)
+            local listingTitle = ns.ListingTitle(l)
+            row.title:SetText(FactionRaceMarkup(l.race) .. namePart .. "  |cffffffff" .. listingTitle .. "|r")
+
+            local parts = {}
+            if l.teamKnown == false then
+                parts[#parts + 1] = "|cff888888Team ?|r"
+            elseif l.hasTeam and l.teamRating > 0 then
+                parts[#parts + 1] = "|cffffd100Team " .. l.teamRating .. "|r"
+            elseif l.hasTeam then
+                parts[#parts + 1] = "|cffffd100Has team|r"
+            else
+                parts[#parts + 1] = "|cff777777No team|r"
+            end
+
+            if l.gs > 0 then
+                parts[#parts + 1] = "|cff55ff55GS " .. (l.gsEstimate or l.gs) .. "|r"
+            end
+
+            parts[#parts + 1] = "|cffaaaaaaExp:|r |cffcccccc" .. (ns.TIERS[l.tier] or "?") .. "|r"
+
+            if l.seasonal then
+                parts[#parts + 1] = "|cff00e5ff[Seasonal]|r"
+            end
+            if l.tenGames then
+                parts[#parts + 1] = "|cffffaa00[10 Games]|r"
+            end
+            row.sub:SetText(table.concat(parts, "  "))
+
             local age = math.max(0, GetTime() - (l.listedAt or l.seen or GetTime()))
             local minutes = math.floor(age / 60)
             row.age:SetText(minutes == 0 and "just now"
                 or (minutes == 1 and "1 min ago" or minutes .. " min ago"))
-            row.role:SetText(ROLE_TEXT[l.role] or l.role)
+            row.role:SetText(ROLE_TEXT[l.role] or ("|cff888888" .. (l.role or "") .. "|r"))
             if l.name == me then
-                row.status:SetText("|cff00ff00Your group|r")
+                row.status:SetText("|cff69f0ae[Your Group]|r")
             elseif l.source == "global" then
-                row.status:SetText("|cff80c0ffChat ad|r")
+                row.status:SetText("|cff64b5f6[Chat Ad]|r")
             else
-                row.status:SetText(STATUS_TEXT[ns.applied[l.name]] or "")
+                local st = ns.applied[l.name]
+                if st == "pending" then
+                    row.status:SetText("|cffffd54f[Pending]|r")
+                elseif st == "invited" then
+                    row.status:SetText("|cff81c784[Invited]|r")
+                elseif st == "declined" then
+                    row.status:SetText("|cffe57373[Declined]|r")
+                else
+                    row.status:SetText("")
+                end
             end
-            if ns.selected == l.name then row.sel:Show() else row.sel:Hide() end
+            if ns.selected == l.name then
+                row.sel:Show()
+                row.selIndicator:Show()
+            else
+                row.sel:Hide()
+                row.selIndicator:Hide()
+            end
             row:Show()
         else
             row.data = nil
@@ -459,57 +570,113 @@ local function BuildGroupView(parent, f)
         tile = true, tileSize = 16, edgeSize = 12,
         insets = { left = 3, right = 3, top = 3, bottom = 3 },
     })
-    ban:SetBackdropColor(0.2, 0.12, 0, 0.9)
+    ban:SetBackdropColor(0.06, 0.08, 0.12, 0.95)
+    ban:SetBackdropBorderColor(0.4, 0.45, 0.55, 0.85)
 
     w.name = ban:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    w.name:SetPoint("TOPLEFT", 8, -8); w.name:SetWidth(164); w.name:SetHeight(14)
+    w.name:SetPoint("TOPLEFT", 8, -8); w.name:SetWidth(150); w.name:SetHeight(14)
     w.name:SetJustifyH("LEFT")
-    w.role = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    w.role:SetPoint("TOPRIGHT", -38, -9); w.role:SetWidth(52); w.role:SetHeight(12)
-    w.role:SetJustifyH("RIGHT")
-    w.title = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    w.title:SetPoint("TOPLEFT", 8, -27); w.title:SetWidth(258); w.title:SetHeight(14)
-    w.title:SetJustifyH("LEFT")
-    w.sub = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    w.sub:SetPoint("TOPLEFT", 8, -46); w.sub:SetWidth(260); w.sub:SetHeight(12)
-    w.sub:SetJustifyH("LEFT")
-    w.info = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    w.info:SetPoint("TOPLEFT", 8, -62); w.info:SetWidth(260); w.info:SetHeight(12)
-    w.info:SetJustifyH("LEFT")
-    w.announceStatus = ban:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-    w.announceStatus:SetPoint("TOPLEFT", 8, -78); w.announceStatus:SetWidth(258); w.announceStatus:SetHeight(12)
-    w.announceStatus:SetJustifyH("LEFT")
+
     w.icon = ban:CreateTexture(nil, "ARTWORK")
     w.icon:SetWidth(24); w.icon:SetHeight(24)
     w.icon:SetPoint("TOPRIGHT", -8, -8)
+
+    w.iconBorder = ban:CreateTexture(nil, "BORDER")
+    w.iconBorder:SetPoint("TOPLEFT", w.icon, -1, 1)
+    w.iconBorder:SetPoint("BOTTOMRIGHT", w.icon, 1, -1)
+    w.iconBorder:SetTexture(0, 0, 0, 0.8)
+
+    w.roleIcon = ban:CreateTexture(nil, "ARTWORK")
+    w.roleIcon:SetWidth(16); w.roleIcon:SetHeight(16)
+    w.roleIcon:SetPoint("TOPRIGHT", -36, -8)
+
+    w.role = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    w.role:SetPoint("RIGHT", w.roleIcon, "LEFT", -4, 0); w.role:SetWidth(50); w.role:SetHeight(12)
+    w.role:SetJustifyH("RIGHT")
+
+    w.title = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    w.title:SetPoint("TOPLEFT", 8, -27); w.title:SetWidth(258); w.title:SetHeight(14)
+    w.title:SetJustifyH("LEFT")
+
+    w.sub = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    w.sub:SetPoint("TOPLEFT", 8, -46); w.sub:SetWidth(260); w.sub:SetHeight(12)
+    w.sub:SetJustifyH("LEFT")
+
+    w.info = ban:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    w.info:SetPoint("TOPLEFT", 8, -62); w.info:SetWidth(260); w.info:SetHeight(12)
+    w.info:SetJustifyH("LEFT")
+
+    w.announceStatus = ban:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    w.announceStatus:SetPoint("TOPLEFT", 8, -78); w.announceStatus:SetWidth(258); w.announceStatus:SetHeight(12)
+    w.announceStatus:SetJustifyH("LEFT")
 
     -- column headers
     local function Col(text, x)
         local fs = g:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
         fs:SetPoint("TOPLEFT", x, -108); fs:SetText(text)
     end
-    Col("Name", 14); Col("Role", 112); Col("GS", 164)
+    Col("Applicant", 12); Col("Role", 112); Col("GS", 160)
 
     w.rows = {}
     for i = 1, APP_ROWS do
         local r = CreateFrame("Frame", nil, g)
         r:SetWidth(276); r:SetHeight(APP_H)
         r:SetPoint("TOPLEFT", g, "TOPLEFT", 8, -124 - (i - 1) * APP_H)
+
+        r.bg = r:CreateTexture(nil, "BACKGROUND")
+        r.bg:SetAllPoints()
+        r.bg:SetTexture(1, 1, 1, (i % 2 == 0) and 0.025 or 0.05)
+
+        r.specIcon = r:CreateTexture(nil, "ARTWORK")
+        r.specIcon:SetWidth(18); r.specIcon:SetHeight(18)
+        r.specIcon:SetPoint("LEFT", 4, 0)
+        r.specIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
         local function FS(x, width)
             local fs = r:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
             fs:SetPoint("LEFT", x, 0); fs:SetWidth(width); fs:SetHeight(12)
             fs:SetJustifyH("LEFT")
             return fs
         end
-        r.name = FS(6, 96)
-        r.role = FS(104, 50)
-        r.gs   = FS(156, 38)
-        r.invite = MakeButton(r, "Invite", 48, 20)
-        r.invite:SetPoint("LEFT", 196, 0)
+        r.name = FS(26, 72)
+
+        r.roleIcon = r:CreateTexture(nil, "ARTWORK")
+        r.roleIcon:SetWidth(14); r.roleIcon:SetHeight(14)
+        r.roleIcon:SetPoint("LEFT", 100, 0)
+
+        r.role = FS(116, 40)
+        r.gs   = FS(160, 36)
+        r.invite = MakeButton(r, "Invite", 44, 20)
+        r.invite:SetPoint("LEFT", 198, 0)
+        r.invite:SetText("|cff55ff55Invite|r")
         r.decline = MakeButton(r, "X", 22, 20)
-        r.decline:SetPoint("LEFT", 248, 0)
+        r.decline:SetPoint("LEFT", 246, 0)
+        r.decline:SetText("|cffff5555X|r")
         r.invite:SetScript("OnClick", function() if r.who then ns.InviteApplicant(r.who) end end)
         r.decline:SetScript("OnClick", function() if r.who then ns.DeclineApplicant(r.who) end end)
+
+        r:EnableMouse(true)
+        r:SetScript("OnEnter", function(self)
+            if not self.applicantData then return end
+            local a = self.applicantData
+            local c = RAID_CLASS_COLORS[a.class] or { r = 1, g = 1, b = 1 }
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(a.name, c.r, c.g, c.b)
+            local roleMarkup = GetRoleMarkup(a.role)
+            GameTooltip:AddLine(roleMarkup .. (a.spec or "") .. " " .. (a.role or ""), 0.9, 0.9, 0.9)
+            if a.gs and a.gs > 0 then
+                GameTooltip:AddDoubleLine("GearScore", tostring(a.gs), 0.7, 0.7, 0.7, 0.3, 1, 0.3)
+            end
+            if a.teamRating and a.teamRating > 0 then
+                GameTooltip:AddDoubleLine("2v2 Rating", tostring(a.teamRating), 0.7, 0.7, 0.7, 1, 0.82, 0)
+            end
+            if a.tier and ns.TIERS[a.tier] then
+                GameTooltip:AddDoubleLine("Experience", ns.TIERS[a.tier], 0.7, 0.7, 0.7, 1, 1, 1)
+            end
+            GameTooltip:Show()
+        end)
+        r:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
         r:Hide()
         w.rows[i] = r
     end
@@ -553,20 +720,21 @@ local function RefreshGroupView()
     local c = RAID_CLASS_COLORS[me.class] or { r = 1, g = 1, b = 1 }
     w.name:SetText(FactionRaceMarkup(me.race) .. string.format("|cff%02x%02x%02x%s|r",
         math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255), me.name))
+    SetRoleIcon(w.roleIcon, me.role)
     w.role:SetText(ROLE_TEXT[me.role] or me.role)
     w.title:SetText(ns.ListingTitle(me))
-    w.sub:SetText("Exp: " .. (ns.TIERS[me.tier] or "?")
-        .. "   " .. (me.hasTeam and ("Team " .. me.teamRating) or "No team"))
+    w.sub:SetText("|cffaaaaaaExp:|r |cffcccccc" .. (ns.TIERS[me.tier] or "?") .. "|r   "
+        .. (me.hasTeam and ("|cffffd100Team " .. me.teamRating .. "|r") or "|cff777777No team|r"))
     local info = {}
-    info[#info + 1] = "GS " .. (me.gs > 0 and me.gs or "-")
-    if me.seasonal then info[#info + 1] = "Seasonal" end
-    if me.tenGames then info[#info + 1] = "10 games" end
+    if me.gs > 0 then info[#info + 1] = "|cff55ff55GS " .. me.gs .. "|r" end
+    if me.seasonal then info[#info + 1] = "|cff00e5ffSeasonal|r" end
+    if me.tenGames then info[#info + 1] = "|cffffaa0010 Games|r" end
     local ownListing = ns.listings[me.name]
     local listedAt = ownListing and ownListing.listedAt
     local age = listedAt and math.max(0, GetTime() - listedAt) or 0
     local minutes = math.floor(age / 60)
-    info[#info + 1] = minutes == 0 and "just now"
-        or (minutes == 1 and "1 min ago" or minutes .. " min ago")
+    info[#info + 1] = "|cff888888" .. (minutes == 0 and "just now"
+        or (minutes == 1 and "1 min ago" or minutes .. " min ago")) .. "|r"
     w.info:SetText(table.concat(info, "   "))
     w.announceStatus:SetText(ns.GetAnnounceStatus and ns.GetAnnounceStatus() or "")
     SetSpecIcon(w.icon, me.class)
@@ -577,14 +745,18 @@ local function RefreshGroupView()
     for i = 1, APP_ROWS do
         local r, l = w.rows[i], list[i]
         if l then
+            r.applicantData = l
             local c = RAID_CLASS_COLORS[l.class] or { r = 1, g = 1, b = 1 }
             r.who = l.name
             r.name:SetText(l.name)
             r.name:SetTextColor(c.r, c.g, c.b)
+            SetListingSpecIcon(r.specIcon, l)
+            SetRoleIcon(r.roleIcon, l.role)
             r.role:SetText(ROLE_TEXT[l.role] or l.role)
-            r.gs:SetText(l.gs > 0 and l.gs or "-")
+            r.gs:SetText(l.gs > 0 and ("|cff55ff55" .. l.gs .. "|r") or "|cff777777-|r")
             r:Show()
         else
+            r.applicantData = nil
             r.who = nil
             r:Hide()
         end
@@ -625,7 +797,11 @@ local function BuildFormView(parent, f)
     w.char:SetWidth(266); w.char:SetJustifyH("LEFT")
 
     MakeLabel(p, "Detected role", 12, -62)
-    w.detectedRole = MakeLabel(p, "", 100, -62, "GameFontHighlight")
+    w.detectedRoleIcon = p:CreateTexture(nil, "ARTWORK")
+    w.detectedRoleIcon:SetWidth(16); w.detectedRoleIcon:SetHeight(16)
+    w.detectedRoleIcon:SetPoint("TOPLEFT", 100, -60)
+    w.detectedRole = p:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    w.detectedRole:SetPoint("LEFT", w.detectedRoleIcon, "RIGHT", 4, 0)
 
     MakeLabel(p, "Seeking", 12, -92)
     w.targetRole = MakeMenuButton(p, 86,
@@ -677,10 +853,13 @@ local function BuildFormView(parent, f)
     w.team = MakeCheck(p, "I have a 2v2 team")
     w.team:SetPoint("TOPLEFT", 6, -144)
     w.team:Disable() -- read from the game, not editable
-    w.rating = MakeLabel(p, "", 172, -152, "GameFontHighlight")
+    w.rating = p:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    w.rating:SetPoint("LEFT", _G[w.team:GetName() .. "Text"], "RIGHT", 8, 0)
 
-    w.detect = MakeLabel(p, "", 12, -176, "GameFontNormalSmall")
-    w.detect:SetWidth(266); w.detect:SetJustifyH("LEFT")
+    w.detect = p:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    w.detect:SetPoint("TOPLEFT", 12, -174)
+    w.detect:SetWidth(268); w.detect:SetHeight(34)
+    w.detect:SetJustifyH("LEFT"); w.detect:SetJustifyV("TOP")
 
     MakeLabel(p, "Experience", 12, -212)
     w.tier = MakeMenuButton(p, 150,
@@ -707,8 +886,11 @@ local function BuildFormView(parent, f)
     w.back:SetPoint("LEFT", w.post, "RIGHT", 6, 0)
     w.back:SetScript("OnClick", function() ns.SaveMine(); f.editing = false; UpdateLeft() end)
 
-    w.hint = MakeLabel(p, "Your role, gearscore and team are also what group leaders see when you sign up.", 12, -384, "GameFontDisableSmall")
-    w.hint:SetWidth(266); w.hint:SetJustifyH("LEFT")
+    w.hint = p:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    w.hint:SetPoint("TOPLEFT", 12, -384)
+    w.hint:SetWidth(268); w.hint:SetHeight(32)
+    w.hint:SetJustifyH("LEFT"); w.hint:SetJustifyV("TOP")
+    w.hint:SetText("Your role, gearscore and team are also what group leaders see when you sign up.")
 
     return p
 end
@@ -722,7 +904,8 @@ function ns.UI_LoadMine()
     local c = RAID_CLASS_COLORS[ns.GetMyClass()] or { r = 1, g = 1, b = 1 }
     w.char:SetText(UnitName("player") .. "  -  " .. (UnitClass("player")) .. ", " .. ns.GetMySpec())
     w.char:SetTextColor(c.r, c.g, c.b)
-    w.detectedRole:SetText(m.role)
+    SetRoleIcon(w.detectedRoleIcon, m.role)
+    w.detectedRole:SetText(ROLE_TEXT[m.role] or m.role)
     w.tier:Refresh(); w.targetRole:Refresh(); w.targetSpecs:Refresh()
     w.gs:SetText(m.gs > 0 and m.gs or "")
     w.gs:EnableMouse(not info.gs)
@@ -734,7 +917,7 @@ function ns.UI_LoadMine()
         w.gs:SetTextColor(1, 1, 1)
     end
     w.team:SetChecked(m.hasTeam)
-    w.rating:SetText(m.hasTeam and ("Rating: " .. m.teamRating) or "")
+    w.rating:SetText(m.hasTeam and ("|cffffd100(Rating: " .. m.teamRating .. ")|r") or "")
     w.seasonal:SetChecked(m.seasonal)
     w.ten:SetChecked(m.tenGames)
     w.note:SetText(m.note or "")
@@ -832,6 +1015,7 @@ function ns.BuildUI()
         tile = true, tileSize = 32, edgeSize = 32,
         insets = { left = 11, right = 12, top = 12, bottom = 11 },
     })
+    f:SetBackdropColor(0.07, 0.07, 0.09, 0.98)
     f:SetMovable(true); f:EnableMouse(true)
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", f.StartMoving)
@@ -888,29 +1072,76 @@ function ns.BuildUI()
             ns.Print("Not connected to the sync channel. Run /alfg comm to retry joining.")
         end
     end)
+    refresh:SetScript("OnUpdate", function(self, elapsed)
+        self.tick = (self.tick or 0) + elapsed
+        if self.tick < 0.4 then return end
+        self.tick = 0
+        local cd = ns.Comm_GetCooldown and ns.Comm_GetCooldown() or 0
+        if cd > 0 then
+            self:SetText(cd .. "s")
+            self:Disable()
+        else
+            if self:GetText() ~= "Refresh" then
+                self:SetText("Refresh")
+                self:Enable()
+            end
+        end
+    end)
     refresh:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine("Refresh listings")
+        local cd = ns.Comm_GetCooldown and ns.Comm_GetCooldown() or 0
+        if cd > 0 then
+            GameTooltip:AddLine("Cooldown: " .. cd .. "s", 1, 0.8, 0)
+        else
+            GameTooltip:AddLine("Query channel for active listings", 0.7, 0.7, 0.7)
+        end
         GameTooltip:Show()
     end)
     refresh:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-    -- Search box with placeholder
-    local search = MakeEdit(right, 360, false, 40)
+    -- Search box with placeholder & clear button
+    local search = MakeEdit(right, 355, false, 40)
     search:SetPoint("TOPLEFT", 14, -34)
     local ph = search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    ph:SetPoint("LEFT", 2, 0)
-    ph:SetText("Search name, spec or title")
-    local function UpdatePlaceholder(self)
-        if self:GetText() == "" and not self:HasFocus() then ph:Show() else ph:Hide() end
+    ph:SetPoint("LEFT", 4, 0)
+    ph:SetText("Search name, spec or title...")
+
+    local clearBtn = CreateFrame("Button", nil, search)
+    clearBtn:SetWidth(16); clearBtn:SetHeight(16)
+    clearBtn:SetPoint("RIGHT", search, "RIGHT", -4, 0)
+    local clearText = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    clearText:SetPoint("CENTER", 0, 0)
+    clearText:SetText("|cffaaaaaaX|r")
+    clearBtn:SetScript("OnEnter", function() clearText:SetText("|cffff5555X|r") end)
+    clearBtn:SetScript("OnLeave", function() clearText:SetText("|cffaaaaaaX|r") end)
+    clearBtn:SetScript("OnClick", function()
+        search:SetText("")
+        search:ClearFocus()
+        ns.search = ""
+        clearBtn:Hide()
+        ph:Show()
+        RefreshList()
+    end)
+    clearBtn:Hide()
+
+    local function UpdateSearchState(self)
+        local txt = self:GetText() or ""
+        if txt == "" then
+            clearBtn:Hide()
+            if not self:HasFocus() then ph:Show() else ph:Hide() end
+        else
+            clearBtn:Show()
+            ph:Hide()
+        end
     end
     search:SetScript("OnTextChanged", function(self)
         ns.search = strlower(self:GetText() or "")
-        UpdatePlaceholder(self)
+        UpdateSearchState(self)
         RefreshList()
     end)
     search:SetScript("OnEditFocusGained", function(self) ph:Hide() end)
-    search:SetScript("OnEditFocusLost", UpdatePlaceholder)
+    search:SetScript("OnEditFocusLost", UpdateSearchState)
 
     f.filterBtn = MakeButton(right, "Filter", 90, 22)
     f.filterBtn:SetPoint("LEFT", search, "RIGHT", 8, 0)

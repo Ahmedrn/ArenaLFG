@@ -306,6 +306,14 @@ function ns.Comm_Request()
     return true
 end
 
+function ns.Comm_GetCooldown()
+    local now = GetTime()
+    if lastRequestAt and now - lastRequestAt < REQUEST_COOLDOWN then
+        return math.ceil(REQUEST_COOLDOWN - (now - lastRequestAt))
+    end
+    return 0
+end
+
 -- Private messages between players (sign-ups), sent as addon whispers
 local af = CreateFrame("Frame")
 af:RegisterEvent("CHAT_MSG_ADDON")

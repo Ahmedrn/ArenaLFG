@@ -10,7 +10,7 @@ local CLASS_ALIASES = {
     SHAMAN = { "shaman", "sham" },
     MAGE = { "mage" },
     WARLOCK = { "warlock", "lock" },
-    DRUID = { "druid" },
+    DRUID = { "druid", "dudu", "drood" },
 }
 
 local CLASS_ORDER = {
@@ -97,11 +97,13 @@ local SPEC_ALIASES = {
         "destrolock", "dest lock", "destro", "lock destro" },
 
     U1 = { "balance druid", "moonkin", "boomkin", "boomie", "boomy", "bdruid", "b druid",
-        "druid balance", "balance" },
+        "bdudu", "b dudu", "boomdudu", "druid balance", "balance" },
     U2 = { "feral druid", "feral cat", "cat druid", "kitty druid", "kitty", "fdruid", "f druid",
-        "druid feral", "feral" },
+        "fdudu", "f dudu", "feral dudu", "feraldudu", "druid feral", "feral" },
     U3 = { "restoration druid", "resto druid", "resto du", "rdruid", "r druid", "rdu", "rdru",
-        "r dru", "restodruid", "tree druid", "druid resto", "druid tree" },
+        "r dru", "restodruid", "tree druid", "druid resto", "druid tree",
+        "rdudu", "r dudu", "resto dudu", "restodudu", "tree dudu", "treedudu",
+        "rdrood", "r drood" },
 }
 
 local RACE_ALIASES = {
@@ -134,7 +136,8 @@ local TARGET_ROLE_ALIASES = {
 }
 local GEAR_SCORE_ESTIMATES = {
     { aliases = { "starter" }, gs = 5600, label = "~5600" },
-    { aliases = { "bis" }, gs = 6000, label = "6000+" },
+    { aliases = { "relent", "relentless", "furious" }, gs = 5750, label = "~5750" },
+    { aliases = { "bis", "wrathful", "wf" }, gs = 6000, label = "6000+" },
 }
 local EXCLUDED_AD_TERMS = {
     "wts", "wtb", "selling", "boost", "carry", "recruiting", "coach", "coaching",
@@ -168,6 +171,8 @@ local function Normalize(text)
         end)
         text = text:gsub("(%d)%s*" .. suffix .. "%f[%A]", "%1 " .. suffix)
     end
+    text = text:gsub("(%f[%a]lf[gm]?)(2[svc]?2?%f[%A])", "%1 %2")
+    text = text:gsub("(%f[%a]need)(2[svc]?2?%f[%A])", "%1 %2")
     text = text:gsub("(%d)(%a%a+)", "%1 %2")
     text = text:gsub("2%s*vs?%s*2", "2v2")
         :gsub("2%s*x%s*2", "2v2")
@@ -299,7 +304,35 @@ local function ParseTeamRating(text)
         or ValidRating(tonumber(text:match(" (%d+) current rating ")))
 end
 
+local function ParseNumericGearScore(text)
+    if not text then return end
+    local whole, dec = text:match(" (%d)[%.,](%d)%s*k?%s*gs ")
+    if not whole then
+        whole, dec = text:match(" (%d)[%.,](%d)%s*k ")
+    end
+    if whole and dec then
+        local val = tonumber(whole) * 1000 + tonumber(dec) * 100
+        if val >= 2000 and val <= 7000 then return val, tostring(val) end
+    end
+    local kGs = text:match(" (%d)%s*k%s*gs ") or text:match(" (%d)%s*k ")
+    if kGs then
+        local val = tonumber(kGs) * 1000
+        if val >= 2000 and val <= 7000 then return val, tostring(val) end
+    end
+    local rawGs = text:match(" (%d%d%d%d)%s*gs ")
+    if rawGs then
+        local val = tonumber(rawGs)
+        if val and val >= 3000 and val <= 6900 then return val, tostring(val) end
+    end
+    local looseGs = text:match(" (%d%d%d%d) ")
+    if looseGs then
+        local val = tonumber(looseGs)
+        if val and val >= 4500 and val <= 6900 then return val, tostring(val) end
+    end
+end
+
 local function ParseEstimatedGearScore(text)
+    if not text then return end
     local foundEstimate, foundAt
     for _, estimate in ipairs(GEAR_SCORE_ESTIMATES) do
         for _, alias in ipairs(estimate.aliases) do
@@ -403,7 +436,7 @@ local function FindOwnerDetails(text, classHint)
     local intentPosition = FindIntentPosition(text)
     local queuePosition, queueLength = FindQueuePosition(text)
     local ownerEnd = intentPosition or queuePosition
-    local ownerText = ownerEnd and text:sub(1, ownerEnd) or ""
+    local ownerText = ownerEnd and (text:sub(1, ownerEnd) .. " ") or text
     local class = classHint or FindClass(ownerText)
     local spec = FindSpec(ownerText, class)
 
@@ -476,16 +509,19 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
     local race = playerRace or FindRace(ownerText)
     local ownDetails = WithoutPreferences(text)
     local intentPosition = FindIntentPosition(ownDetails)
-    local senderStats = intentPosition and ownDetails:sub(1, intentPosition) or ""
+    local senderStats = intentPosition and (ownDetails:sub(1, intentPosition) .. " ") or ownDetails
     if not targetSpecs then
         preferredRole, targetSpecs = FindRequestedSpecs(text)
     end
     local targetRole = preferredRole or FindTargetRole(ownDetails) or "Any"
     local hasTargetSpecs = targetSpecs and next(targetSpecs) ~= nil or false
-    local teamRating = ParseTeamRating(senderStats)
+    local teamRating = ParseTeamRating(senderStats) or ParseTeamRating(text)
     local hasTeam = teamRating ~= nil or HasOwnTeam(ownDetails)
     local tier = ParseExperienceTier(text)
-    local gs, gsEstimate = ParseEstimatedGearScore(senderStats)
+    local gs, gsEstimate = ParseNumericGearScore(senderStats)
+    if not gs then gs, gsEstimate = ParseEstimatedGearScore(senderStats) end
+    if not gs then gs, gsEstimate = ParseNumericGearScore(text) end
+    if not gs then gs, gsEstimate = ParseEstimatedGearScore(text) end
 
     local displayMessage = message:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
     displayMessage = displayMessage:gsub("|T.-|t", ""):gsub("|H.-|h(.-)|h", "%1")
