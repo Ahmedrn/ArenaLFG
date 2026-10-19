@@ -1141,7 +1141,7 @@ function UpdateLeft()
         f.groupView:Hide()
         f.mine:Show()
         -- with no listing posted the form follows the tab (e.g. after delisting from another tab)
-        if not ns.mine.posted and ns.viewBracket then ns.mine.bracket = ns.viewBracket end
+        if not ns.mine.posted and ns.viewBracket then ns.SetMineBracket(ns.viewBracket) end
         ns.UI_LoadMine()
     end
 end
@@ -1152,7 +1152,7 @@ function ns.SetViewBracket(bracket)
     ns.viewBracket = ns.NormalizeBracket(bracket)
     if not ns.mine.posted then
         if f and f.mine:IsShown() then ns.SaveMine() end
-        ns.mine.bracket = ns.viewBracket
+        ns.SetMineBracket(ns.viewBracket)
     end
     ns.selected = nil
     if f then

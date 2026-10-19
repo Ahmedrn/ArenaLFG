@@ -17,6 +17,26 @@ ns.DEFAULT_BRACKET = "2v2"
 -- arena team size that carries the rating for each bracket (DuoQ uses the "Solo Queue" team)
 ns.BRACKET_TEAM_SIZE = { ["2v2"] = 2, ["3v3"] = 3, ["DuoQ"] = 5 }
 
+-- Change the bracket the form edits; each bracket keeps its own seeking (role, specs, comp)
+function ns.SetMineBracket(bracket)
+    local m = ns.mine
+    bracket = ns.NormalizeBracket(bracket)
+    if m.bracket == bracket then return end
+    m.seeks = m.seeks or {}
+    local specs = {}
+    for id, on in pairs(m.targetSpecs or {}) do specs[id] = on end
+    m.seeks[m.bracket] = { role = m.targetRole, any = m.targetAny, specs = specs,
+        comp = m.comp, haveSpec = m.haveSpec }
+    local saved = m.seeks[bracket]
+    m.bracket = bracket
+    m.targetRole = saved and saved.role or "Any"
+    m.targetAny = saved and saved.any or false
+    m.targetSpecs = saved and saved.specs or {}
+    m.comp = saved and saved.comp or nil
+    m.haveSpec = saved and saved.haveSpec or nil
+    ns.SanitizeMine()
+end
+
 -- Comp-based seeking only exists in 3v3
 function ns.SanitizeMine()
     local m = ns.mine
@@ -121,6 +141,7 @@ local mineDefaults = {
     hasTeam = false, teamRating = 0,
     tier = 1, seasonal = false, tenGames = false,
     note = "", targetRole = "Any", targetAny = false, targetSpecs = {}, posted = false,
+    seeks = {}, -- seeking choices remembered per bracket
 }
 
 -- Stock 3.3.5 sound kits that can be picked for the alerts
