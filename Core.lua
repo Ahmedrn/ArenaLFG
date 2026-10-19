@@ -21,8 +21,9 @@ ns.BRACKET_TEAM_SIZE = { ["2v2"] = 2, ["3v3"] = 3, ["DuoQ"] = 5 }
 function ns.SanitizeMine()
     local m = ns.mine
     m.bracket = ns.NormalizeBracket(m.bracket)
-    if m.bracket ~= "3v3" and (m.targetRole == "Comp" or m.comp or m.haveSpec) then
-        m.targetRole, m.targetAny, m.comp, m.haveSpec = "Any", false, nil, nil
+    -- the comp and group choice are remembered; only the derived seeking is dropped
+    if m.bracket ~= "3v3" and m.targetRole == "Comp" then
+        m.targetRole, m.targetAny = "Any", false
         wipe(m.targetSpecs)
     end
 end
@@ -505,11 +506,20 @@ function ns.InPvpInstance()
     return inInstance and (instanceType == "arena" or instanceType == "pvp")
 end
 
+-- A battleground / arena match that was found or is running (the game makes its own group)
+function ns.PvpPending()
+    for i = 1, (MAX_BATTLEFIELD_QUEUES or 3) do
+        local status = GetBattlefieldStatus(i)
+        if status == "confirm" or status == "active" then return true end
+    end
+    return false
+end
+
 -- A listing is removed when a group forms; a 3v3 listing may stay up in a party of two
 -- (two players looking for the last member). Inside a battleground or arena (queued
 -- or SoloQ) the group is made by the game, so the listing is kept.
 function ns.GroupBlocksListing()
-    if ns.InPvpInstance() then return false end
+    if ns.InPvpInstance() or ns.PvpPending() then return false end
     if GetNumRaidMembers() > 0 then return true end
     local others = GetNumPartyMembers()
     if ns.mine and ns.mine.bracket == "3v3" then return others > 1 end
@@ -520,10 +530,11 @@ local gf = CreateFrame("Frame")
 gf:RegisterEvent("PARTY_MEMBERS_CHANGED")
 gf:RegisterEvent("RAID_ROSTER_UPDATE")
 gf:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+gf:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 local PVP_GRACE = 20 -- the game-made BG / arena group can outlive the instance for a moment
 local function CheckGroup()
     if not ns.DB then return end
-    if ns.InPvpInstance() then -- keep listings and sign-ups while in BG / arena (SoloQ)
+    if ns.InPvpInstance() or ns.PvpPending() then -- keep listings and sign-ups while in BG / arena (SoloQ)
         ns.lastPvpAt = GetTime()
         return
     end
@@ -538,7 +549,8 @@ local function CheckGroup()
     end
 
     if ns.mine.posted and ns.GroupBlocksListing() then
-        ns.Print("You are in a group now, your listing was removed.")
+        ns.Print("You are in a group now, your listing was removed (party " .. GetNumPartyMembers()
+            .. ", raid " .. GetNumRaidMembers() .. ").")
         ns.RemoveMine()
     end
 

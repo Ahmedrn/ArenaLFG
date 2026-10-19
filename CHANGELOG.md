@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep your listing when a SoloQ or battleground match is found, not only once inside the instance.
 - 3v3 listings: choose a comp and whether you are alone or with a partner instead of picking one role; announcements and listings show the specs still needed (for example `Awar LF Ele+Hpal 3v3`).
 - Your listing is no longer removed when you queue for or enter a battleground or arena (including SoloQ); a 3v3 listing also stays up in a party of two.
 - Add 3v3 and DuoQ (Solo Queue) brackets: switch between the 2v2, 3v3 and DuoQ tabs to browse and list groups for each. Your team and rating are read from the matching arena team.

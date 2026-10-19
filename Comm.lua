@@ -22,6 +22,7 @@ local SPEC_ABBREVIATIONS = {
     L1 = "Affli", L2 = "Demo", L3 = "Destro",
     U1 = "Boomkin", U2 = "Feral", U3 = "Rdruid",
 }
+ns.SPEC_ABBREVIATIONS = SPEC_ABBREVIATIONS
 local lastBroadcastAt
 local lastRequestAt
 local requestResponsePending = false

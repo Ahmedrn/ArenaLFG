@@ -1053,7 +1053,7 @@ function ns.UI_LoadMine()
     local m, w = ns.mine, f.mineWidgets
     local info = ns.DetectMine()
     ns.SanitizeMine()
-    if m.comp then ns.ApplyComp(m) end -- recompute after a respec
+    if m.comp and m.bracket == "3v3" then ns.ApplyComp(m) end -- recompute after a respec
     LayoutForm(f)
 
     local c = RAID_CLASS_COLORS[ns.GetMyClass()] or { r = 1, g = 1, b = 1 }

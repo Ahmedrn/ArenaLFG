@@ -181,7 +181,9 @@ function ns.BuildMine()
         targetRole = m.targetRole, targetAny = m.targetAny, targetSpecs = m.targetSpecs,
         specId = ns.GetMySpecId(),
         race = ns.GetMyRace(),
-        bracket = m.bracket, haveSpec = m.haveSpec, comp = m.comp,
+        bracket = m.bracket,
+        haveSpec = m.bracket == "3v3" and m.haveSpec or nil,
+        comp = m.bracket == "3v3" and m.comp or nil,
     }
 end
 
@@ -254,9 +256,15 @@ function ns.ListingTitle(l)
         return preference and (l.note .. " - looking for " .. preference) or l.note
     end
     local comp = ns.MatchComp(l)
-    if comp and preference then
-        return (l.spec or "") .. (l.haveSpec and (" + " .. ns.SpecTokenLabel(l.haveSpec)) or "")
-            .. " looking for " .. preference .. " (" .. comp.name .. ")"
+    if comp then
+        local ab = ns.SPEC_ABBREVIATIONS or {}
+        local function short(token) return ab[token] or ns.SpecTokenLabel(token) end
+        local needs = {}
+        for _, slot in ipairs(ns.CompRemainingSlots(comp, l.specId, l.haveSpec)) do
+            needs[#needs + 1] = short(slot)
+        end
+        return short(l.specId) .. (l.haveSpec and ("+" .. short(l.haveSpec)) or "")
+            .. " LF " .. table.concat(needs, "+") .. " (" .. comp.name .. ")"
     end
     local cls = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[l.class]) or l.class
     return l.spec .. " " .. cls .. " looking for " .. (preference or "a partner")
