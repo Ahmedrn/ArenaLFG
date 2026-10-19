@@ -360,6 +360,7 @@ f:SetScript("OnEvent", function(self, event, msg, sender, lang, channelString)
         if l then
             l.wire = msg
             ns.AddListing(l)
+            ns.CheckVersion(l.version)
         end
     end
 end)
@@ -393,7 +394,7 @@ af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
     if strsub(msg, 1, 3) == "AP;" then
         if not (ns.DB and ns.mine and ns.mine.posted) then return end
         local l = ns.Decode(strsub(msg, 4), sender)
-        if l then
+        if l and not ns.IsHidden(sender) then
             ns.AddApplicant(l)
             ns.Print(sender .. " signed up for your group.")
             ns.PlayAlert("applicant")

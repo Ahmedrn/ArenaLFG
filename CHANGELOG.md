@@ -2,6 +2,10 @@
 
 ## 2.0.0
 
+- Tint listings red (declined you), blue (friends) and green (guildmates); mark listings that look for your spec with "Wants you" and add a *Looking for my spec* filter.
+- Hide players from the row's right-click menu (`/alfg hide`, `/alfg unhide`, `/alfg hidden`); their listings and sign-ups are ignored.
+- Remember the window position.
+- Tell you once when another ArenaLFG user runs a newer version.
 - Remove your listing while you are AFK and restore it when you are back (not during a battleground or arena).
 - Import 3v3 (`3v3`, `3s`, `3c3`...) and duo (`duo`, `duoq`) ads from Global chat into the matching tab.
 - Partner match alerts only fire for the bracket you are looking in and name it; DuoQ listings without a Solo Queue team show as Unrated.

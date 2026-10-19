@@ -116,6 +116,7 @@ local defaults = {
     characters = {},
     profiles = {},
     profileKeys = {},
+    hidden = {}, -- [playerName] = true, players hidden from the list
 }
 
 local profileDefaults = {
@@ -444,6 +445,7 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg sound test - Test play alert sounds.")
         ns.Print("/alfg debug - Toggle debug messages.")
         ns.Print("/alfg clear - Clear the local group list.")
+        ns.Print("/alfg hide <name> | unhide <name> | hidden - Manage hidden players.")
     elseif msg == "version" or msg == "ver" or msg == "v" then
         ns.Print("Version " .. ns.VERSION)
     elseif msg == "options" or msg == "config" or msg == "opt" then
@@ -459,6 +461,15 @@ SlashCmdList["ARENALFG"] = function(msg)
     elseif msg == "announce" then
         ns.Print("Global group announcements are " .. (ns.DB.announce and "enabled" or "disabled")
             .. ". Use /alfg announce on or /alfg announce off to change it.")
+    elseif msg == "hidden" then
+        local names = {}
+        for name in pairs(ns.SV.hidden or {}) do names[#names + 1] = name end
+        table.sort(names)
+        ns.Print(#names > 0 and ("Hidden players: " .. table.concat(names, ", ")) or "No hidden players.")
+    elseif msg:match("^hide%s+") then
+        ns.HidePlayer(strtrim(rawMsg:match("^%S+%s+(.+)$") or ""), true)
+    elseif msg:match("^unhide%s+") then
+        ns.HidePlayer(strtrim(rawMsg:match("^%S+%s+(.+)$") or ""), false)
     elseif msg == "clear" then
         wipe(ns.listings)
         ns.Changed()

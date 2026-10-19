@@ -54,7 +54,7 @@ function ns.Encode(l)
         b(l.hasTeam), l.teamRating or 0, l.tier or 1,
         b(l.seasonal), b(l.tenGames), clean(l.note),
         l.targetRole or "Any", EncodeTargetSpecs(l), clean(l.specId), clean(l.race),
-        ns.NormalizeBracket(l.bracket), clean(l.haveSpec),
+        ns.NormalizeBracket(l.bracket), clean(l.haveSpec), clean(ns.VERSION),
     }, SEP)
 end
 
@@ -100,6 +100,7 @@ function ns.Decode(msg, sender)
         race = ns.NormalizeRace(parts[15]),
         bracket = bracket,
         haveSpec = bracket == "3v3" and ns.IsValidHaveSpec(parts[17]) and parts[17] or nil,
+        version = (parts[18] or ""):match("^%d+%.%d+%.%d+$"),
     }
 end
 
@@ -124,15 +125,7 @@ function ns.CheckPartnerMatch(l)
         return
     end
 
-    local mySpec = ns.GetMySpecId and ns.GetMySpecId()
-    local myRole = ns.mine and ns.mine.role or (ns.GetSuggestedRole and ns.GetSuggestedRole()) or "DPS"
-    local isMatch = false
-
-    if l.targetSpecs and mySpec and l.targetSpecs[mySpec] then
-        isMatch = true
-    elseif l.targetAny and l.targetRole == myRole then
-        isMatch = true
-    end
+    local isMatch = ns.WantsMe(l)
 
     if isMatch then
         recentAlerts[l.name] = now
@@ -156,7 +149,84 @@ function ns.CheckPartnerMatch(l)
     end
 end
 
+-- Does this listing look for my spec (or my role when it takes any spec of it)?
+function ns.WantsMe(l)
+    if not l or l.name == UnitName("player") then return false end
+    local mySpec = ns.GetMySpecId and ns.GetMySpecId()
+    if l.targetSpecs and mySpec and l.targetSpecs[mySpec] then return true end
+    local myRole = ns.mine and ns.mine.role or (ns.GetSuggestedRole and ns.GetSuggestedRole()) or "DPS"
+    return (l.targetAny and l.targetRole == myRole) and true or false
+end
+
+----------------------------------------------------------------------
+-- Hidden players, friends and guildmates, newer-version notice
+----------------------------------------------------------------------
+function ns.IsHidden(name)
+    return (ns.SV and ns.SV.hidden and ns.SV.hidden[name]) and true or false
+end
+
+function ns.HidePlayer(name, on)
+    if not name or name == "" or name == UnitName("player") then return end
+    ns.SV.hidden = ns.SV.hidden or {}
+    ns.SV.hidden[name] = on and true or nil
+    if on then
+        ns.RemoveListing(name)
+        ns.applicants[name] = nil
+    end
+    ns.Print((on and "Hiding " or "No longer hiding ") .. name .. ".")
+    ns.Changed()
+end
+
+ns.friends, ns.guildies = {}, {}
+local socialPending = false
+local function RebuildSocial()
+    socialPending = false
+    wipe(ns.friends); wipe(ns.guildies)
+    for i = 1, GetNumFriends() do
+        local name = GetFriendInfo(i)
+        if name then ns.friends[name] = true end
+    end
+    if IsInGuild() then
+        for i = 1, GetNumGuildMembers(true) do
+            local name = GetGuildRosterInfo(i)
+            if name then ns.guildies[name] = true end
+        end
+    end
+    ns.Changed()
+end
+local socialFrame = CreateFrame("Frame")
+socialFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+socialFrame:RegisterEvent("FRIENDLIST_UPDATE")
+socialFrame:RegisterEvent("GUILD_ROSTER_UPDATE")
+socialFrame:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_ENTERING_WORLD" then
+        ShowFriends()
+        if IsInGuild() then GuildRoster() end
+    end
+    if not socialPending then -- these events are frequent; rebuild at most every few seconds
+        socialPending = true
+        ns.After(5, RebuildSocial)
+    end
+end)
+
+local function VersionNumber(v)
+    local a, b, c = tostring(v or ""):match("^(%d+)%.(%d+)%.(%d+)$")
+    return a and (tonumber(a) * 1000000 + tonumber(b) * 1000 + tonumber(c)) or nil
+end
+
+-- Tell the player once per new version when another ArenaLFG user runs a newer one
+function ns.CheckVersion(version)
+    local theirs, mine = VersionNumber(version), VersionNumber(ns.VERSION)
+    if not (theirs and mine and ns.SV) or theirs <= mine then return end
+    local told = VersionNumber(ns.SV.notifiedVersion)
+    if told and told >= theirs then return end
+    ns.SV.notifiedVersion = version
+    ns.Print("ArenaLFG " .. version .. " is available (you have " .. ns.VERSION
+        .. "). Update from Warperia or https://github.com/Ahmedrn/ArenaLFG/releases")
+end
+
 function ns.AddListing(l)
+    if l.name ~= UnitName("player") and ns.IsHidden(l.name) then return end
     local previous = ns.listings[l.name]
     l.listedAt = previous and previous.source == l.source and previous.listedAt or GetTime()
     l.seen = GetTime()
@@ -227,6 +297,7 @@ function ns.GetSorted()
         if f.seasonal == "Seasonal" and l.seasonal == false then ok = false end
         if f.seasonal == "Non-seasonal" and l.seasonal == true then ok = false end
         if f.tenGames and l.tenGames == false then ok = false end
+        if f.matchesMe and not ns.WantsMe(l) then ok = false end
         if ok and ns.search and ns.search ~= "" then
             local partnerSpecs = table.concat(ns.GetPartnerSpecNames(l), " ")
             local hay = strlower(l.name .. " " .. l.spec .. " " .. (l.note or "") .. " "
@@ -305,6 +376,7 @@ end
 
 -- Someone signed up to MY group
 function ns.AddApplicant(l)
+    if ns.IsHidden(l.name) then return end
     ns.appSeq = ns.appSeq + 1
     l.order = ns.appSeq
     l.received = GetTime()

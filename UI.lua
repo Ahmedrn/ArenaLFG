@@ -326,6 +326,7 @@ local function RowClick(row, button)
             { text = l.name, isTitle = true, notCheckable = true },
             { text = "Whisper", notCheckable = true, func = function() ChatFrame_SendTell(l.name) end },
             { text = "Invite to group", notCheckable = true, func = function() InviteUnit(l.name) end },
+            { text = "Hide this player", notCheckable = true, func = function() ns.HidePlayer(l.name, true) end },
             { text = "Cancel", notCheckable = true },
         }, menuFrame, "cursor", 0, 0, "MENU")
     end
@@ -340,6 +341,10 @@ local function BuildRow(parent, i)
     row.bg = row:CreateTexture(nil, "BACKGROUND")
     row.bg:SetAllPoints()
     row.bg:SetTexture(1, 1, 1, (i % 2 == 0) and 0.025 or 0.055)
+
+    row.tint = row:CreateTexture(nil, "BACKGROUND") -- red declined / blue friend / green guild
+    row.tint:SetAllPoints()
+    row.tint:Hide()
 
     row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
     local hl = row:GetHighlightTexture()
@@ -413,6 +418,12 @@ local function BuildRow(parent, i)
     return row
 end
 
+local REL_COLORS = {
+    declined = { 0.9, 0.2, 0.2 },
+    friend = { 0.2, 0.5, 1 },
+    guild = { 0.2, 0.8, 0.3 },
+}
+
 local STATUS_TEXT = {
     pending  = "|cffffff00Pending|r",
     invited  = "|cff00ff00Invited|r",
@@ -440,7 +451,7 @@ end
 
 local function FilterActive()
     local f = ns.DB.filters
-    return f.role ~= "Any" or f.team ~= "Any" or f.seasonal ~= "Any" or f.tenGames
+    return f.role ~= "Any" or f.team ~= "Any" or f.seasonal ~= "Any" or f.tenGames or f.matchesMe
 end
 
 local function RefreshList()
@@ -481,6 +492,9 @@ local function RefreshList()
             row.title:SetText(FactionRaceMarkup(l.race) .. namePart .. "  |cffffffff" .. listingTitle .. "|r")
 
             local parts = {}
+            if ns.WantsMe(l) then
+                parts[#parts + 1] = "|cff55ff55Wants you|r"
+            end
             if l.teamKnown == false then
                 parts[#parts + 1] = "|cff888888Team ?|r"
             elseif l.hasTeam and l.teamRating > 0 then
@@ -522,9 +536,22 @@ local function RefreshList()
                     row.status:SetText("|cff81c784[Invited]|r")
                 elseif st == "declined" then
                     row.status:SetText("|cffe57373[Declined]|r")
+                elseif ns.friends[l.name] then
+                    row.status:SetText("|cff64b5f6[Friend]|r")
+                elseif ns.guildies[l.name] then
+                    row.status:SetText("|cff81c784[Guild]|r")
                 else
                     row.status:SetText("")
                 end
+            end
+            local relation = ns.applied[l.name] == "declined" and "declined"
+                or (ns.friends[l.name] and "friend") or (ns.guildies[l.name] and "guild") or nil
+            local color = relation and REL_COLORS[relation]
+            if color then
+                row.tint:SetTexture(color[1], color[2], color[3], 0.18)
+                row.tint:Show()
+            else
+                row.tint:Hide()
             end
             if ns.selected == l.name then
                 row.sel:Show()
@@ -564,8 +591,10 @@ local function OpenFilterMenu(anchor)
     tinsert(menu, title("Other"))
     tinsert(menu, { text = "10 games only", checked = flt.tenGames,
         func = function() flt.tenGames = not flt.tenGames; ns.RefreshAll() end })
+    tinsert(menu, { text = "Looking for my spec", checked = flt.matchesMe,
+        func = function() flt.matchesMe = not flt.matchesMe; ns.RefreshAll() end })
     tinsert(menu, { text = "Reset filters", notCheckable = true, func = function()
-        flt.role = "Any"; flt.team = "Any"; flt.seasonal = "Any"; flt.tenGames = false
+        flt.role = "Any"; flt.team = "Any"; flt.seasonal = "Any"; flt.tenGames = false; flt.matchesMe = false
         ns.RefreshAll()
     end })
     EasyMenu(menu, menuFrame, anchor, 0, 0, "MENU")
@@ -1216,6 +1245,11 @@ function ns.BuildUI()
     f:Hide()
     f:SetWidth(880); f:SetHeight(510)
     f:SetPoint("CENTER")
+    local pos = ns.SV and ns.SV.framePos
+    if type(pos) == "table" and pos[1] and pos[2] then
+        f:ClearAllPoints()
+        f:SetPoint(pos[1], UIParent, pos[2], tonumber(pos[3]) or 0, tonumber(pos[4]) or 0)
+    end
     f:SetFrameStrata("DIALOG")
     f:SetToplevel(true)
     f:SetBackdrop({
@@ -1228,7 +1262,11 @@ function ns.BuildUI()
     f:SetMovable(true); f:EnableMouse(true)
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", f.StartMoving)
-    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    f:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local point, _, relPoint, x, y = self:GetPoint()
+        if ns.SV then ns.SV.framePos = { point, relPoint, x, y } end
+    end)
     tinsert(UISpecialFrames, "ArenaLFGFrame") -- closes with Esc
     ns.frame = f
 
