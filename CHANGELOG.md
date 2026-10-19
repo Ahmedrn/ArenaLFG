@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Import 3v3 (`3v3`, `3s`, `3c3`...) and duo (`duo`, `duoq`) ads from Global chat into the matching tab.
+- Partner match alerts only fire for the bracket you are looking in and name it; DuoQ listings without a Solo Queue team show as Unrated.
 - Auto-reply to whispers and party invites while your group is listed and you are in an arena match (SoloQ); option in the options page.
 - Add a "Reply to <player>" entry to the Share menu to answer whoever whispered you last about the addon.
 - Keep your listing when a SoloQ or battleground match is found, not only once inside the instance.

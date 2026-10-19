@@ -119,7 +119,15 @@ local RACE_ALIASES = {
     DRAENEI = { "draenei" },
 }
 
-local QUEUE_MARKERS = { " 2v2 ", " 2s ", " 2 s ", " 2c ", " 2s2 ", " 2c2 " }
+local BRACKET_MARKERS = {
+    ["2v2"] = { " 2v2 ", " 2s ", " 2 s ", " 2c ", " 2s2 ", " 2c2 " },
+    ["3v3"] = { " 3v3 ", " 3s ", " 3 s ", " 3c ", " 3s3 ", " 3c3 " },
+    ["DuoQ"] = { " duo ", " duoq ", " duo q ", " duo queue ", " duo soloq ", " soloq duo " },
+}
+local QUEUE_MARKERS = {}
+for _, bracket in ipairs(ns.BRACKETS) do
+    for _, marker in ipairs(BRACKET_MARKERS[bracket]) do QUEUE_MARKERS[#QUEUE_MARKERS + 1] = marker end
+end
 local PREFERENCE_MARKERS = { " pref ", " prefer ", " preferably ", " preference " }
 local TEAM_NEGATIONS = {
     "no team", "dont have team", "don't have team",
@@ -189,12 +197,15 @@ local function Normalize(text)
     text = text:gsub("%f[%d](%d+)%s*k%f[%A]", function(whole)
         return tostring(tonumber(whole) * 1000)
     end)
-    text = text:gsub("(%f[%a]lf[gm]?)(2[svc]?2?%f[%A])", "%1 %2")
-    text = text:gsub("(%f[%a]need)(2[svc]?2?%f[%A])", "%1 %2")
+    text = text:gsub("(%f[%a]lf[gm]?)([23][svc]?[23]?%f[%A])", "%1 %2")
+    text = text:gsub("(%f[%a]need)([23][svc]?[23]?%f[%A])", "%1 %2")
     text = text:gsub("(%d)(%a%a+)", "%1 %2")
     text = text:gsub("2%s*vs?%s*2", "2v2")
         :gsub("2%s*x%s*2", "2v2")
         :gsub("2%s*on%s*2", "2v2")
+    text = text:gsub("3%s*vs?%s*3", "3v3")
+        :gsub("3%s*x%s*3", "3v3")
+        :gsub("3%s*on%s*3", "3v3")
     text = text:gsub("[^%w]", " ")
     text = text:gsub("%s+", " ")
     return " " .. strtrim(text) .. " "
@@ -438,6 +449,18 @@ local function FindQueuePosition(text)
     return first, firstLength
 end
 
+-- Bracket named by the earliest marker; nil when the ad names none
+local function FindBracket(text)
+    local bracket, first
+    for _, name in ipairs(ns.BRACKETS) do
+        for _, marker in ipairs(BRACKET_MARKERS[name]) do
+            local position = text:find(marker, 1, true)
+            if position and (not first or position < first) then bracket, first = name, position end
+        end
+    end
+    return bracket
+end
+
 local function HasQueueMarker(text)
     for _, marker in ipairs(QUEUE_MARKERS) do
         if text:find(marker, 1, true) then return true end
@@ -500,9 +523,13 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
 
     local text = Normalize(message)
     if HasAlias(text, EXCLUDED_AD_TERMS) then return false end
-    local mentions2v2 = HasQueueMarker(text)
+    local bracket = FindBracket(text)
+    local mentions2v2 = bracket ~= nil -- any bracket marker
     local hasIntent = HasIntent(text)
     if not hasIntent and not mentions2v2 then return false end
+    -- "duo" alone is common chat; only count it as an ad when the sender is looking for someone
+    if bracket == "DuoQ" and not hasIntent then return false end
+    bracket = bracket or "2v2"
 
     local preferredRole, targetSpecs
     if not mentions2v2 then
@@ -511,7 +538,7 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
     end
 
     if ns.DEBUG and mentions2v2 and hasIntent then
-        ns.Debug("possible 2v2 ad from " .. sender .. " (channelString="
+        ns.Debug("possible " .. bracket .. " ad from " .. sender .. " (channelString="
             .. tostring(channel) .. ", channelName=" .. tostring(channelName)
             .. ", channelNumber=" .. tostring(channelNumber)
             .. ", guid=" .. tostring(guid) .. ")")
@@ -564,7 +591,7 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
         targetRole = targetRole,
         targetAny = targetRole ~= "Any" and not hasTargetSpecs,
         targetSpecs = targetSpecs or {},
-        bracket = "2v2",
+        bracket = bracket,
         source = "global",
         chatText = message,
     })

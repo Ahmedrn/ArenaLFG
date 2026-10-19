@@ -39,6 +39,8 @@ Files are large (UI.lua 1390 lines, GlobalParser.lua 591). **Grep for the functi
 - Slash commands for debugging: `/alfg me` (detected class/spec/GS/arena teams), `/alfg comm` (channel status/retry), `/alfg clear`, `/alfg version`, `/alfg help`; `ns.Debug` prints when `debug` is on. Core.lua also defines `/rl` as a reload shortcut.
 - Optional integration: GearScore/GearScoreLite via `GearScore_GetScore` (declared in `OptionalDeps`).
 
+- No Lua compiler is installed: syntax-check with `python -m pip install luaparser` then `luaparser.ast.parse(open(f).read())` per file; `lupa` can run `GlobalParser.lua` offline with WoW API stubs (see the parser test pattern: stub `CreateFrame`, `strtrim`, `strsub`, `ns.AddListing`, load `Data.lua` then `GlobalParser.lua`).
+
 ## Releasing
 
 - Version lives in `ArenaLFG.toc` (`## Version` and the `X-GitHub-Project-Download` URL) and `README.md` install line (`ArenaLFG-vX.Y.Z.zip`); add notes under `## Unreleased` in `CHANGELOG.md` and move them under the new version heading on release.

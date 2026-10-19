@@ -32,6 +32,9 @@ end
 function ns.TeamLabel(bracket)
     return ns.NormalizeBracket(bracket) == "DuoQ" and "Solo Queue team" or (ns.NormalizeBracket(bracket) .. " team")
 end
+function ns.NoTeamText(bracket)
+    return ns.NormalizeBracket(bracket) == "DuoQ" and "Unrated" or "No team"
+end
 function ns.BracketTag(bracket)
     return ns.NormalizeBracket(bracket) == "DuoQ" and "duoq" or ns.NormalizeBracket(bracket)
 end

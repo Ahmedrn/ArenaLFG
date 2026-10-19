@@ -117,6 +117,7 @@ function ns.CheckPartnerMatch(l)
     if not l or l.name == UnitName("player") then return end
     if ns.InGroup and ns.InGroup() then return end
     if ns.InPvpInstance and ns.InPvpInstance() then return end
+    if (l.bracket or ns.DEFAULT_BRACKET) ~= ns.mine.bracket then return end
 
     local now = GetTime()
     if recentAlerts[l.name] and now - recentAlerts[l.name] < 600 then
@@ -138,7 +139,8 @@ function ns.CheckPartnerMatch(l)
         local c = RAID_CLASS_COLORS[l.class] or { r = 1, g = 1, b = 1 }
         local namePart = string.format("|cff%02x%02x%02x%s|r",
             math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255), l.name)
-        local sourceTag = (l.source == "global") and "|cff64b5f6[Chat Ad]|r" or "|cff69f0ae[ArenaLFG]|r"
+        local sourceTag = ((l.source == "global") and "|cff64b5f6[Chat Ad]|r" or "|cff69f0ae[ArenaLFG]|r")
+            .. "|cffffffff[" .. (l.bracket or ns.DEFAULT_BRACKET) .. "]|r"
         local who = l.spec and l.spec ~= "Unknown" and l.spec
             or (l.class ~= "UNKNOWN" and LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[l.class])
         ns.Print(string.format("%s %s%s is looking for %s!",

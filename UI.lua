@@ -481,7 +481,7 @@ local function RefreshList()
             elseif l.hasTeam then
                 parts[#parts + 1] = "|cffffd100Has team|r"
             else
-                parts[#parts + 1] = "|cff777777No team|r"
+                parts[#parts + 1] = "|cff777777" .. ns.NoTeamText(l.bracket) .. "|r"
             end
 
             if l.gs > 0 then
@@ -806,7 +806,7 @@ local function RefreshGroupView()
     w.role:SetText(RoleText(me.role))
     w.title:SetText(ns.ListingTitle(me))
     w.sub:SetText("|cffaaaaaaExp:|r |cffcccccc" .. (ns.TIERS[me.tier] or "?") .. "|r   "
-        .. (me.hasTeam and ("|cffffd100Team " .. me.teamRating .. "|r") or "|cff777777No team|r"))
+        .. (me.hasTeam and ("|cffffd100Team " .. me.teamRating .. "|r") or ("|cff777777" .. ns.NoTeamText(me.bracket) .. "|r")))
     local info = { "|cffffffff" .. me.bracket .. "|r" }
     if me.gs > 0 then info[#info + 1] = "|cff55ff55GS " .. me.gs .. "|r" end
     if me.seasonal then info[#info + 1] = "|cff00e5ffSeasonal|r" end
