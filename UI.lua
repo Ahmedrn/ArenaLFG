@@ -275,11 +275,11 @@ local function ShowTooltip(row)
     if l.teamKnown == false then
         GameTooltip:AddLine("Team status not detected from chat", 0.6, 0.6, 0.6)
     elseif l.hasTeam and l.teamRating > 0 then
-        GameTooltip:AddDoubleLine("2v2 Team", "Rating " .. l.teamRating, 0.7, 0.7, 0.7, 1, 0.82, 0)
+        GameTooltip:AddDoubleLine(ns.TeamLabel(l.bracket), "Rating " .. l.teamRating, 0.7, 0.7, 0.7, 1, 0.82, 0)
     elseif l.hasTeam then
-        GameTooltip:AddLine("Has a 2v2 team (rating not stated)", 0.2, 1, 0.2)
+        GameTooltip:AddLine("Has a " .. ns.TeamLabel(l.bracket) .. " (rating not stated)", 0.2, 1, 0.2)
     else
-        GameTooltip:AddLine("No 2v2 team yet", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine("No " .. ns.TeamLabel(l.bracket) .. " yet", 0.6, 0.6, 0.6)
     end
     if l.seasonal then GameTooltip:AddLine("Seasonal character", 0, 0.85, 1) end
     if l.tenGames then GameTooltip:AddLine("Only wants 10 games (arena points)", 1, 0.82, 0) end
@@ -578,7 +578,7 @@ function ns.OpenShareMenu(anchor)
 
     if not (isArena or inParty) and not (targetName and targetName ~= UnitName("player")) then
         if channelId > 0 then
-            ChatFrame_OpenChat("/" .. channelId .. " Know a 2v2 partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+            ChatFrame_OpenChat("/" .. channelId .. " Know an arena partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
         else
             ns.Print("Join your configured Global channel before sharing ArenaLFG.")
         end
@@ -595,7 +595,7 @@ function ns.OpenShareMenu(anchor)
             text = label,
             notCheckable = true,
             func = function()
-                ChatFrame_OpenChat("/p Looking for a 2v2 partner? Get the ArenaLFG addon: https://warperia.com/addon-wotlk/arenalfg/")
+                ChatFrame_OpenChat("/p Looking for an arena partner? Get the ArenaLFG addon: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end
@@ -605,7 +605,7 @@ function ns.OpenShareMenu(anchor)
             text = "Global (" .. channelName .. ")",
             notCheckable = true,
             func = function()
-                ChatFrame_OpenChat("/" .. channelId .. " Know a 2v2 partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+                ChatFrame_OpenChat("/" .. channelId .. " Know an arena partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end
@@ -615,7 +615,7 @@ function ns.OpenShareMenu(anchor)
             text = "Whisper " .. targetName,
             notCheckable = true,
             func = function()
-                ChatFrame_OpenChat("/w " .. targetName .. " Know a 2v2 partner? Check out ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+                ChatFrame_OpenChat("/w " .. targetName .. " Know an arena partner? Check out ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end
@@ -739,7 +739,7 @@ local function BuildGroupView(parent, f)
                 GameTooltip:AddDoubleLine("GearScore", tostring(a.gs), 0.7, 0.7, 0.7, 0.3, 1, 0.3)
             end
             if a.teamRating and a.teamRating > 0 then
-                GameTooltip:AddDoubleLine("2v2 Rating", tostring(a.teamRating), 0.7, 0.7, 0.7, 1, 0.82, 0)
+                GameTooltip:AddDoubleLine(ns.TeamLabel(a.bracket), tostring(a.teamRating), 0.7, 0.7, 0.7, 1, 0.82, 0)
             end
             if a.tier and ns.TIERS[a.tier] then
                 GameTooltip:AddDoubleLine("Experience", ns.TIERS[a.tier], 0.7, 0.7, 0.7, 1, 1, 1)
@@ -784,7 +784,7 @@ local function RefreshGroupView()
     w.title:SetText(ns.ListingTitle(me))
     w.sub:SetText("|cffaaaaaaExp:|r |cffcccccc" .. (ns.TIERS[me.tier] or "?") .. "|r   "
         .. (me.hasTeam and ("|cffffd100Team " .. me.teamRating .. "|r") or "|cff777777No team|r"))
-    local info = {}
+    local info = { "|cffffffff" .. me.bracket .. "|r" }
     if me.gs > 0 then info[#info + 1] = "|cff55ff55GS " .. me.gs .. "|r" end
     if me.seasonal then info[#info + 1] = "|cff00e5ffSeasonal|r" end
     if me.tenGames then info[#info + 1] = "|cffffaa0010 Games|r" end
@@ -851,7 +851,7 @@ local function BuildFormView(parent, f)
     local w = {}
     f.mineWidgets = w
 
-    MakeLabel(p, "List your group", 12, -10)
+    w.header = MakeLabel(p, "List your group", 12, -10)
     w.char = MakeLabel(p, "", 12, -32, "GameFontHighlight")
     w.char:SetWidth(266); w.char:SetJustifyH("LEFT")
 
@@ -969,13 +969,15 @@ function ns.UI_LoadMine()
     else
         w.gs:SetTextColor(1, 1, 1)
     end
+    w.header:SetText("List your group (" .. m.bracket .. ")")
+    _G[w.team:GetName() .. "Text"]:SetText("I have a " .. ns.TeamLabel(m.bracket))
     w.team:SetChecked(m.hasTeam)
     w.rating:SetText(m.hasTeam and ("|cffffd100(Rating: " .. m.teamRating .. ")|r") or "")
     w.seasonal:SetChecked(m.seasonal)
     w.ten:SetChecked(m.tenGames)
     w.note:SetText(m.note or "")
 
-    local txt = (info.team and ("2v2 team \"" .. info.team .. "\" found") or "No 2v2 team found on this character")
+    local txt = (info.team and (ns.TeamLabel(m.bracket) .. " \"" .. info.team .. "\" found") or ("No " .. ns.TeamLabel(m.bracket) .. " found on this character"))
         .. (info.gs and "; gearscore read from your GearScore addon."
             or "; GearScore API unavailable; gearscore is self-reported.")
     w.detect:SetText((info.team and "|cff00ff00" or "|cff999999") .. txt .. "|r")
@@ -1008,6 +1010,24 @@ function UpdateLeft()
         f.mine:Show()
         ns.UI_LoadMine()
     end
+end
+
+-- Switch the browser tab; with no listing posted the form follows the tab
+function ns.SetViewBracket(bracket)
+    local f = ns.frame
+    ns.viewBracket = ns.NormalizeBracket(bracket)
+    if not ns.mine.posted then
+        if f and f.mine:IsShown() then ns.SaveMine() end
+        ns.mine.bracket = ns.viewBracket
+    end
+    ns.selected = nil
+    if f then
+        for b, tab in pairs(f.tabs) do
+            if b == ns.viewBracket then tab:LockHighlight() else tab:UnlockHighlight() end
+        end
+        UpdateLeft()
+    end
+    ns.Changed()
 end
 
 function ns.PostMine()
@@ -1100,7 +1120,13 @@ function ns.BuildUI()
     right:SetPoint("TOPLEFT", 318, -44)
     f.right = right
 
-    MakeLabel(right, "Arena 2v2 groups", 12, -12)
+    f.tabs = {}
+    for i, bracket in ipairs(ns.BRACKETS) do
+        local tab = MakeButton(right, bracket, 66, 22)
+        tab:SetPoint("TOPLEFT", 10 + (i - 1) * 70, -8)
+        tab:SetScript("OnClick", function() ns.SetViewBracket(bracket) end)
+        f.tabs[bracket] = tab
+    end
     local share = MakeButton(f, "Share ArenaLFG", 110, 20)
     share:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 24, 18)
     share:SetScript("OnClick", function(self) ns.OpenShareMenu(self) end)
@@ -1240,8 +1266,7 @@ function ns.BuildUI()
         f:SetToplevel(true)
         f:Raise()
         ns.RequestArenaData()
-        UpdateLeft()
-        ns.RefreshAll()
+        ns.SetViewBracket(ns.viewBracket or ns.mine.bracket)
     end)
     f:SetScript("OnHide", function()
         if f.mine:IsShown() then ns.SaveMine() end -- do not lose unsaved edits

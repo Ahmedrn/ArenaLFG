@@ -17,6 +17,14 @@ ns.DEFAULT_BRACKET = "2v2"
 -- arena team size that carries the rating for each bracket (DuoQ uses the "Solo Queue" team)
 ns.BRACKET_TEAM_SIZE = { ["2v2"] = 2, ["3v3"] = 3, ["DuoQ"] = 5 }
 
+-- team the rating comes from, and the short tag used in chat
+function ns.TeamLabel(bracket)
+    return ns.NormalizeBracket(bracket) == "DuoQ" and "Solo Queue team" or (ns.NormalizeBracket(bracket) .. " team")
+end
+function ns.BracketTag(bracket)
+    return ns.NormalizeBracket(bracket) == "DuoQ" and "duoq" or ns.NormalizeBracket(bracket)
+end
+
 function ns.NormalizeBracket(bracket)
     for _, b in ipairs(ns.BRACKETS) do
         if b == bracket then return b end
@@ -442,8 +450,8 @@ SlashCmdList["ARENALFG"] = function(msg)
     elseif msg == "me" then
         ns.Print("class=" .. tostring(ns.GetMyClass()) .. " spec=" .. tostring(ns.GetMySpec())
             .. " gs=" .. tostring(ns.GetMyGearScore()))
-        local tname, rating = ns.GetMy2v2Team()
-        ns.Print("2v2 team=" .. tostring(tname) .. " rating=" .. tostring(rating))
+        local tname, rating = ns.GetMyTeam(ns.mine.bracket)
+        ns.Print(ns.mine.bracket .. " team=" .. tostring(tname) .. " rating=" .. tostring(rating))
         for i = 1, (MAX_ARENA_TEAMS or 3) do
             local n, size, r = GetArenaTeam(i)
             ns.Print("arena slot " .. i .. ": name=" .. tostring(n) .. " size=" .. tostring(size) .. " rating=" .. tostring(r))

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add 3v3 and DuoQ (Solo Queue) brackets: switch between the 2v2, 3v3 and DuoQ tabs to browse and list groups for each. Your team and rating are read from the matching arena team.
 - Share ArenaLFG works without a listing: the Share button moved to the bottom of the main window; PvP integration and alert toggles are now only in the options page.
 - Join the Global channel automatically at login if you are not already in it (visible, unlike the hidden sync channel).
 - Remove the Global channel name setting from the options page.

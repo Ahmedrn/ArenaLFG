@@ -185,7 +185,7 @@ local function BuildAnnouncement()
     local class = UnitClass("player")
     local owner = SPEC_ABBREVIATIONS[specId]
         or ((spec and spec ~= "None" and (spec .. " ") or "") .. (class or ""))
-    if owner == "" then owner = "2v2 player" end
+    if owner == "" then owner = "arena player" end
 
     local targets = {}
     if type(listing.targetSpecs) == "table" then
@@ -212,7 +212,7 @@ local function BuildAnnouncement()
     if experience then
         rating = rating .. " Exp: " .. experience
     end
-    return owner .. " LF " .. lookingFor .. " 2v2" .. rating .. " (ArenaLFG)"
+    return owner .. " LF " .. lookingFor .. " " .. ns.BracketTag(listing.bracket) .. rating .. " (ArenaLFG)"
 end
 
 function ns.TryAnnounceMine()

@@ -1,6 +1,6 @@
 # ArenaLFG
 
-**A 2v2 arena partner finder for WoW 3.3.5a (WotLK).** Stop scrolling through global chat: see who is looking for a 2v2 partner, sign up with one click, or list your own group, in a window modeled on the Premade Groups finder from modern WoW.
+**An arena partner finder for WoW 3.3.5a (WotLK).** Stop scrolling through global chat: see who is looking for a 2v2, 3v3 or DuoQ partner, sign up with one click, or list your own group, in a window modeled on the Premade Groups finder from modern WoW.
 
 > Built for Warmane (Blackrock) but should work on any 3.3.5a server that allows custom chat channels.
 
@@ -8,6 +8,7 @@
 
 ## Features
 
+- **Brackets:** tabs for 2v2, 3v3 and DuoQ (Solo Queue). Your team and rating are read from the matching arena team.
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
 - **Chat ad import:** clear 2v2 partner ads can appear as temporary listings. Parsed details may be incomplete or inaccurate. The selected-ad button opens a whisper; use the row's right-click menu to invite.
 - **Optional Global announcement:** opt in to share your listed group in Global. Posts are public and subject to server chat rules; toggle announcements and set how often they post (every 2 to 30 minutes) in the options, or use `/alfg announce on` / `/alfg announce off`.
