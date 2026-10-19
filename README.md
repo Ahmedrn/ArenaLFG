@@ -22,7 +22,7 @@
 - **Options and profiles:** all settings are in *Interface > AddOns > ArenaLFG* (or `/alfg options`, or right-click the minimap button), including the Global announcement frequency. Settings live in profiles you can switch, create, copy, delete and reset; characters share the "Default" profile unless you pick another one.
 - **List your group** with role, gearscore, experience tier, preferred partner specs, a short title and flags (seasonal character, 10 games for arena points). The listed-group card mirrors the browser listing and shows your race, class-colored name, role, title, team details and listing age. Settings are saved separately for each character.
 - **Preferred partner specs:** choose a role, then select one or more specs or choose **Any spec** (for example, Healer → Holy Paladin and Restoration Druid, or any Healer); their icons or role preference appear in the displayed group title.
-- **Auto-detection**: your class, race, spec, 2v2 team and team rating are read from the game. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
+- **Auto-detection**: your class, race, spec, arena team and team rating are read from the game. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
 - **Roles:** DPS, Healer, Tank. Your role is automatically detected from your class and primary talent tree and shown in your listing.
 - **PvP UI integration:** enabled by default; ArenaLFG opens beside the PvP window when you open it (H is the default WoW PvP keybinding). Use the options page or `/alfg pvp` to toggle the integration. The minimap button and `/alfg` always open ArenaLFG manually.
 - **Topmost window:** ArenaLFG uses the `DIALOG` frame strata and raises itself when opened to stay above most game windows.
@@ -73,6 +73,7 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | `/alfg clear` | Clear the local list |
 | `/alfg announce on` / `off` | Enable or disable Global announcements for your listed group |
 | `/alfg announce prompt` | Reopen the announcement consent prompt |
+| `/alfg hide <name>` / `unhide <name>` / `hidden` | Hide a player's listings, show them again, or list hidden players |
 
 ## How it works
 
@@ -80,7 +81,7 @@ ArenaLFG shares listings with other addon users on your faction. It can also dis
 
 ### Privacy
 
-When you list a group, your **character name, class, spec, role, gearscore, 2v2 team rating (if you have a team), experience tier, flags and title** are visible to other ArenaLFG users. When you sign up to a group, the same profile is sent privately to that leader. Global chat ads are parsed locally and are not rebroadcast by ArenaLFG. Nothing is sent outside the game and there is no external server.
+When you list a group, your **character name, class, spec, role, gearscore, team rating (if you have a team), experience tier, flags, title and addon version** are visible to other ArenaLFG users. When you sign up to a group, the same profile is sent privately to that leader. Global chat ads are parsed locally and are not rebroadcast by ArenaLFG. Nothing is sent outside the game and there is no external server.
 
 ## Requirements
 
@@ -91,8 +92,8 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 
 - **ArenaLFG listings are not appearing:** make sure other players are using the addon too, then run `/alfg comm` to check or retry the connection.
 - **The list stays empty:** the addon is only useful when other players run it too. Ask a friend to install it, post a group, and press the refresh button.
-- **A Global chat ad did not appear:** only clear 2v2 partner-seeking messages are imported, and some wording may not be recognized.
-- **Your 2v2 team is not detected:** run `/alfg me` and check the arena slots it prints. Open the PvP / arena team frame once, then `/reload`.
+- **A Global chat ad did not appear:** only clear 2v2, 3v3 and duo partner-seeking messages are imported, and some wording may not be recognized.
+- **Your arena team is not detected:** run `/alfg me` and check the arena slots it prints. Open the PvP / arena team frame once, then `/reload`.
 - **The addon does not appear in the AddOns list:** check that the folder is named `ArenaLFG` and contains `ArenaLFG.toc` directly (not another folder inside).
 - **Lua errors:** enable error display with `/console scriptErrors 1` and open an issue with the message.
 
@@ -101,7 +102,7 @@ When you list a group, your **character name, class, spec, role, gearscore, 2v2 
 - Visible listings depend on how many players run the addon.
 - Global chat parsing recognizes common English wording and can misread ads; inferred details are not verified.
 - Gearscore is self-reported (or read from your GearScore addon), so it can be edited by the player.
-- Solo-queue style teams reported by the server are ignored; only real 2v2 teams count.
+- Your rating comes from your 2v2, 3v3 or Solo Queue team (for DuoQ); other team sizes are ignored.
 
 ## Contributing / bug reports
 

@@ -179,8 +179,10 @@ end
 
 ns.friends, ns.guildies = {}, {}
 local socialPending = false
+local lastSocialAt = 0
 local function RebuildSocial()
     socialPending = false
+    lastSocialAt = GetTime()
     wipe(ns.friends); wipe(ns.guildies)
     for i = 1, GetNumFriends() do
         local name = GetFriendInfo(i)
@@ -209,7 +211,7 @@ socialFrame:SetScript("OnEvent", function(self, event)
     end
     if not socialPending then -- these events are frequent; rebuild at most every few seconds
         socialPending = true
-        ns.After(5, RebuildSocial)
+        ns.After(math.max(5, 30 - (GetTime() - lastSocialAt)), RebuildSocial) -- a big guild roster is not worth rescanning more often
     end
 end)
 
