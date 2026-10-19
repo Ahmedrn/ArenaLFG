@@ -222,7 +222,7 @@ function ns.CheckVersion(version)
     if told and told >= theirs then return end
     ns.SV.notifiedVersion = version
     ns.Print("ArenaLFG " .. version .. " is available (you have " .. ns.VERSION
-        .. "). Update from Warperia or https://github.com/Ahmedrn/ArenaLFG/releases")
+        .. "). Update it from Warperia: https://warperia.com/addon-wotlk/arenalfg/")
 end
 
 function ns.AddListing(l)
