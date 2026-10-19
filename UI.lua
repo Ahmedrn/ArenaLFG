@@ -155,7 +155,11 @@ local function MakeMultiMenuButton(parent, width, getValues, isSelected, onToggl
     btn:SetWidth(width); btn:SetHeight(22)
     function btn:Refresh()
         self:SetText(getText())
-        self:SetEnabled(#getValues() > 0)
+        if #getValues() > 0 then
+            self:Enable()
+        else
+            self:Disable()
+        end
     end
     btn:SetScript("OnClick", function(self)
         if activeMultiMenuButton == self then
