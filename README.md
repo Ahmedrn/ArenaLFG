@@ -8,7 +8,7 @@
 
 ## Features
 
-- **Brackets:** tabs for 2v2, 3v3 and DuoQ (Solo Queue). Your team and rating are read from the matching arena team.
+- **Brackets:** tabs for 2v2, 3v3 and DuoQ (Solo Queue). Your team and rating are read from the matching arena team. In 3v3, pick a comp (for example Thunder Cleave) and whether you are alone or already have a partner; the specs still needed are filled in for you.
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
 - **Chat ad import:** clear 2v2 partner ads can appear as temporary listings. Parsed details may be incomplete or inaccurate. The selected-ad button opens a whisper; use the row's right-click menu to invite.
 - **Optional Global announcement:** opt in to share your listed group in Global. Posts are public and subject to server chat rules; toggle announcements and set how often they post (every 2 to 30 minutes) in the options, or use `/alfg announce on` / `/alfg announce off`.
@@ -48,7 +48,7 @@ The folder must be named exactly `ArenaLFG`.
 | Refresh the list | The refresh button asks other players to announce their groups again; if it is still on cooldown, the remaining wait is shown in chat |
 | Share ArenaLFG | Click **Share** in your listed-group view, then review and send the prefilled Global message |
 
-Listings and applications expire automatically when they are no longer current. Your listing can restore after a quick reload, and is removed when you are grouped or enter an arena or battleground.
+Listings and applications expire automatically when they are no longer current. Your listing can restore after a quick reload, and is removed when a group forms. It stays up while you queue or play battlegrounds and SoloQ. In 3v3, a party of two can keep a listing up to find the last player.
 
 ### Notes on your profile
 

@@ -41,7 +41,7 @@ local function EncodeTargetSpecs(l)
     if l.targetAny then return "ANY" end
     local ids = {}
     for _, spec in ipairs(ns.PARTNER_SPECS) do
-        if spec.role == l.targetRole and l.targetSpecs and l.targetSpecs[spec.id] then
+        if (l.targetRole == "Comp" or spec.role == l.targetRole) and l.targetSpecs and l.targetSpecs[spec.id] then
             ids[#ids + 1] = spec.id
         end
     end
@@ -54,7 +54,7 @@ function ns.Encode(l)
         b(l.hasTeam), l.teamRating or 0, l.tier or 1,
         b(l.seasonal), b(l.tenGames), clean(l.note),
         l.targetRole or "Any", EncodeTargetSpecs(l), clean(l.specId), clean(l.race),
-        ns.NormalizeBracket(l.bracket),
+        ns.NormalizeBracket(l.bracket), clean(l.haveSpec),
     }, SEP)
 end
 
@@ -65,15 +65,17 @@ function ns.Decode(msg, sender)
     if not RAID_CLASS_COLORS[parts[2]] then return nil end -- reject junk
     local role = "DPS"
     for _, r in ipairs(ns.ROLES) do if r == parts[4] then role = r end end
+    local bracket = ns.NormalizeBracket(parts[16]) -- missing from older clients = 2v2
     local targetRole = "Any"
     for _, r in ipairs(ns.PARTNER_ROLES) do
         if r == parts[12] then targetRole = r end
     end
+    if parts[12] == "Comp" and bracket == "3v3" then targetRole = "Comp" end
     local targetSpecs = {}
-    local targetAny = targetRole ~= "Any" and parts[13] == "ANY"
+    local targetAny = targetRole ~= "Any" and targetRole ~= "Comp" and parts[13] == "ANY"
     for id in (parts[13] or ""):gmatch("[^,]+") do
         for _, spec in ipairs(ns.PARTNER_SPECS) do
-            if spec.id == id and spec.role == targetRole then
+            if spec.id == id and (spec.role == targetRole or targetRole == "Comp") then
                 targetSpecs[id] = true
                 break
             end
@@ -96,7 +98,8 @@ function ns.Decode(msg, sender)
         targetSpecs = targetSpecs,
         specId = ns.IsValidSpecId(parts[2], parts[14]) and parts[14] or nil,
         race = ns.NormalizeRace(parts[15]),
-        bracket = ns.NormalizeBracket(parts[16]), -- missing from older clients = 2v2
+        bracket = bracket,
+        haveSpec = bracket == "3v3" and ns.IsValidHaveSpec(parts[17]) and parts[17] or nil,
     }
 end
 
@@ -178,7 +181,7 @@ function ns.BuildMine()
         targetRole = m.targetRole, targetAny = m.targetAny, targetSpecs = m.targetSpecs,
         specId = ns.GetMySpecId(),
         race = ns.GetMyRace(),
-        bracket = m.bracket,
+        bracket = m.bracket, haveSpec = m.haveSpec, comp = m.comp,
     }
 end
 
@@ -249,6 +252,11 @@ function ns.ListingTitle(l)
     local preference = ns.PartnerPreference(l)
     if l.note and l.note ~= "" then
         return preference and (l.note .. " - looking for " .. preference) or l.note
+    end
+    local comp = ns.MatchComp(l)
+    if comp and preference then
+        return (l.spec or "") .. (l.haveSpec and (" + " .. ns.SpecTokenLabel(l.haveSpec)) or "")
+            .. " looking for " .. preference .. " (" .. comp.name .. ")"
     end
     local cls = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[l.class]) or l.class
     return l.spec .. " " .. cls .. " looking for " .. (preference or "a partner")

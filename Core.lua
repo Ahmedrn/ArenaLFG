@@ -17,6 +17,16 @@ ns.DEFAULT_BRACKET = "2v2"
 -- arena team size that carries the rating for each bracket (DuoQ uses the "Solo Queue" team)
 ns.BRACKET_TEAM_SIZE = { ["2v2"] = 2, ["3v3"] = 3, ["DuoQ"] = 5 }
 
+-- Comp-based seeking only exists in 3v3
+function ns.SanitizeMine()
+    local m = ns.mine
+    m.bracket = ns.NormalizeBracket(m.bracket)
+    if m.bracket ~= "3v3" and (m.targetRole == "Comp" or m.comp or m.haveSpec) then
+        m.targetRole, m.targetAny, m.comp, m.haveSpec = "Any", false, nil, nil
+        wipe(m.targetSpecs)
+    end
+end
+
 -- team the rating comes from, and the short tag used in chat
 function ns.TeamLabel(bracket)
     return ns.NormalizeBracket(bracket) == "DuoQ" and "Solo Queue team" or (ns.NormalizeBracket(bracket) .. " team")
@@ -339,7 +349,7 @@ ev:SetScript("OnEvent", function(self, event, arg1)
         local okRole = false
         for _, r in ipairs(ns.ROLES) do if r == ns.mine.role then okRole = true end end
         if not okRole then ns.mine.role = "DPS" end
-        ns.mine.bracket = ns.NormalizeBracket(ns.mine.bracket)
+        ns.SanitizeMine()
         ns.BuildMinimapButton()
         if ns.BuildOptions then ns.BuildOptions() end
     elseif event == "PLAYER_ENTERING_WORLD" then
@@ -495,23 +505,43 @@ function ns.InPvpInstance()
     return inInstance and (instanceType == "arena" or instanceType == "pvp")
 end
 
+-- A listing is removed when a group forms; a 3v3 listing may stay up in a party of two
+-- (two players looking for the last member). Inside a battleground or arena (queued
+-- or SoloQ) the group is made by the game, so the listing is kept.
+function ns.GroupBlocksListing()
+    if ns.InPvpInstance() then return false end
+    if GetNumRaidMembers() > 0 then return true end
+    local others = GetNumPartyMembers()
+    if ns.mine and ns.mine.bracket == "3v3" then return others > 1 end
+    return others > 0
+end
+
 local gf = CreateFrame("Frame")
 gf:RegisterEvent("PARTY_MEMBERS_CHANGED")
 gf:RegisterEvent("RAID_ROSTER_UPDATE")
 gf:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-gf:SetScript("OnEvent", function()
+local PVP_GRACE = 20 -- the game-made BG / arena group can outlive the instance for a moment
+local function CheckGroup()
     if not ns.DB then return end
+    if ns.InPvpInstance() then -- keep listings and sign-ups while in BG / arena (SoloQ)
+        ns.lastPvpAt = GetTime()
+        return
+    end
     local grouped = ns.InGroup()
-    local inPvpInstance = ns.InPvpInstance()
-    if not grouped and not inPvpInstance then return end
+    if not grouped then return end
+    if ns.lastPvpAt then
+        local left = PVP_GRACE - (GetTime() - ns.lastPvpAt)
+        if left > 0 then
+            ns.After(left + 1, CheckGroup)
+            return
+        end
+    end
 
-    if ns.mine.posted then
-        ns.Print(grouped and "You are in a group now, your listing was removed."
-            or "You entered an arena or battleground, your listing was removed.")
+    if ns.mine.posted and ns.GroupBlocksListing() then
+        ns.Print("You are in a group now, your listing was removed.")
         ns.RemoveMine()
     end
 
-    if not grouped then return end
     -- and cancel any sign-ups I still have pending elsewhere
     for name, status in pairs(ns.applied) do
         if status == "pending" then
@@ -519,7 +549,8 @@ gf:SetScript("OnEvent", function()
             if l then ns.CancelApply(l) else ns.applied[name] = nil end
         end
     end
-end)
+end
+gf:SetScript("OnEvent", CheckGroup)
 
 -- Quick reload while developing: /rl
 SLASH_ARENALFGRL1 = "/rl"

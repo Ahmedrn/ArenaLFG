@@ -83,11 +83,12 @@ ns.PARTNER_SPECS = {
     { id = "U3", role = "Healer", label = "Restoration Druid", icon = "Spell_Nature_HealingTouch" },
 }
 
+-- A 3v3 listing seeking a comp has targetRole "Comp": its specs may be of any role
 function ns.GetPartnerSpecNames(listing)
     local selected, names = listing and listing.targetSpecs, {}
     if type(selected) ~= "table" then return names end
     for _, spec in ipairs(ns.PARTNER_SPECS) do
-        if spec.role == listing.targetRole and selected[spec.id] then
+        if (listing.targetRole == "Comp" or spec.role == listing.targetRole) and selected[spec.id] then
             names[#names + 1] = spec.label
         end
     end
@@ -98,7 +99,7 @@ function ns.GetPartnerSpecIcons(listing)
     local selected, icons = listing and listing.targetSpecs, {}
     if type(selected) ~= "table" then return icons end
     for _, spec in ipairs(ns.PARTNER_SPECS) do
-        if spec.role == listing.targetRole and selected[spec.id] then
+        if (listing.targetRole == "Comp" or spec.role == listing.targetRole) and selected[spec.id] then
             icons[#icons + 1] = spec.icon
         end
     end
@@ -137,6 +138,156 @@ function ns.GetSpecIcon(class, specId)
         if spec.id == specId then return spec.icon end
     end
     return nil
+end
+
+----------------------------------------------------------------------
+-- 3v3 comps. A slot is a spec id ("W1") or "X*" for any spec of that class.
+----------------------------------------------------------------------
+local COMP_DATA = {
+    { "Thunder Cleave", "W1", "S1", "P1" }, { "TSG", "W1", "D3", "P1" },
+    { "LSP", "L*", "S1", "P1" }, { "PHP", "P3", "H2", "C1" },
+    { "Shatterplay", "M3", "C3", "P1" }, { "RMP", "R3", "M3", "C1" },
+    { "PHD", "D3", "H2", "P1" }, { "Jungle Cleave", "U2", "H2", "C1" },
+    { "MLS", "M3", "L3", "S3" }, { "Shadowplay", "L1", "C3", "S3" },
+    { "Vanguards Cleave", "D3", "P3", "C1" }, { "RPD", "R3", "C3", "U3" },
+    { "Turbo Cleave", "W1", "S2", "P1" }, { "Thug Cleave", "R3", "H2", "C1" },
+    { "Scooby Doo", "R3", "P3", "C1" }, { "Shadowcleave", "D3", "L1", "P1" },
+    { "Beast Cleave", "H1", "S2", "P1" }, { "God Cleave", "S1", "U1", "P1" },
+    { "LSD", "L3", "S1", "U3" }, { "African Turtle Cleave", "W3", "H2", "P1" },
+    { "Kittycleave", "W1", "U2", "P1" }, { "RLS", "R3", "L1", "S3" },
+    { "RLP", "R3", "L3", "P1" }, { "WLD", "L1", "W1", "U3" },
+    { "MLP", "M3", "L3", "P1" }, { "FMP", "U2", "M3", "C1" },
+}
+ns.COMPS = {}
+for _, c in ipairs(COMP_DATA) do
+    ns.COMPS[#ns.COMPS + 1] = { name = c[1], slots = { c[2], c[3], c[4] } }
+end
+
+local function IsWildcard(token) return strsub(token, 2, 2) == "*" end
+local function SlotHas(slot, id)
+    return slot == id or (IsWildcard(slot) and strsub(slot, 1, 1) == strsub(id, 1, 1) and not IsWildcard(id))
+end
+
+function ns.FindComp(name)
+    for _, c in ipairs(ns.COMPS) do
+        if c.name == name then return c end
+    end
+end
+
+function ns.CompsForSpec(specId)
+    local out = {}
+    if not specId then return out end
+    for _, c in ipairs(ns.COMPS) do
+        for _, slot in ipairs(c.slots) do
+            if SlotHas(slot, specId) then out[#out + 1] = c; break end
+        end
+    end
+    return out
+end
+
+-- Slots of the comp still to fill once my spec (and my partner's, if I have one) are placed
+function ns.CompRemainingSlots(comp, mySpec, haveSpec)
+    local taken = {}
+    local function take(id)
+        if not id then return end
+        for i, slot in ipairs(comp.slots) do
+            if not taken[i] and SlotHas(slot, id) then taken[i] = true; return end
+        end
+    end
+    take(mySpec); take(haveSpec)
+    local out = {}
+    for i, slot in ipairs(comp.slots) do
+        if not taken[i] then out[#out + 1] = slot end
+    end
+    return out
+end
+
+-- "Warlock" for a class wildcard, otherwise the spec name
+function ns.SpecTokenLabel(token)
+    if IsWildcard(token) then
+        for class, prefix in pairs(SPEC_PREFIX_BY_CLASS) do
+            if prefix == strsub(token, 1, 1) then
+                return LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[class] or class
+            end
+        end
+        return token
+    end
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if spec.id == token then return spec.label end
+    end
+    return token
+end
+
+function ns.IsValidHaveSpec(token)
+    if type(token) ~= "string" then return false end
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if spec.id == token then return true end
+    end
+    if IsWildcard(token) then
+        for _, prefix in pairs(SPEC_PREFIX_BY_CLASS) do
+            if prefix == strsub(token, 1, 1) then return true end
+        end
+    end
+    return false
+end
+
+local function AddSlotSpecs(set, slot)
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if SlotHas(slot, spec.id) then set[spec.id] = true end
+    end
+end
+
+-- Fill m.targetSpecs from the chosen comp (m.comp) and group (m.haveSpec)
+function ns.ApplyComp(m)
+    local comp = ns.FindComp(m.comp)
+    local mySpec = ns.GetMySpecId()
+    if comp then
+        local fits = false
+        for _, slot in ipairs(comp.slots) do
+            if mySpec and SlotHas(slot, mySpec) then fits = true end
+        end
+        if not fits then comp = nil end
+    end
+    if not comp then
+        m.comp, m.haveSpec = nil, nil
+        if m.targetRole == "Comp" then m.targetRole = "Any"; wipe(m.targetSpecs) end
+        return
+    end
+    local valid = false
+    for _, slot in ipairs(ns.CompRemainingSlots(comp, mySpec, nil)) do
+        if slot == m.haveSpec then valid = true end
+    end
+    if not valid then m.haveSpec = nil end
+    m.targetRole, m.targetAny = "Comp", false
+    wipe(m.targetSpecs)
+    for _, slot in ipairs(ns.CompRemainingSlots(comp, mySpec, m.haveSpec)) do
+        AddSlotSpecs(m.targetSpecs, slot)
+    end
+end
+
+-- Which comp a received 3v3 listing is after (for display); nil if none fits
+function ns.MatchComp(l)
+    if l.bracket ~= "3v3" or l.targetRole ~= "Comp" or not l.specId then return nil end
+    for _, c in ipairs(ns.COMPS) do
+        local fits = false
+        for _, slot in ipairs(c.slots) do
+            if SlotHas(slot, l.specId) then fits = true end
+        end
+        if fits then
+            local needs = {}
+            for _, slot in ipairs(ns.CompRemainingSlots(c, l.specId, l.haveSpec)) do
+                AddSlotSpecs(needs, slot)
+            end
+            local same = true
+            for id in pairs(needs) do
+                if not (l.targetSpecs and l.targetSpecs[id]) then same = false end
+            end
+            for id in pairs(l.targetSpecs or {}) do
+                if not needs[id] then same = false end
+            end
+            if same then return c end
+        end
+    end
 end
 
 local ROLE_BY_TALENT_TAB = {

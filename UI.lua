@@ -264,7 +264,18 @@ local function ShowTooltip(row)
     local raceName = ns.GetRaceName(l.race)
     if raceName then GameTooltip:AddDoubleLine("Race", raceName, 0.7, 0.7, 0.7, 1, 1, 1) end
     local partnerSpecs = ns.GetPartnerSpecNames(l)
-    if #partnerSpecs > 0 then
+    local comp = ns.MatchComp(l)
+    if comp then
+        local labels = {}
+        for _, slot in ipairs(ns.CompRemainingSlots(comp, l.specId, l.haveSpec)) do
+            labels[#labels + 1] = ns.SpecTokenLabel(slot)
+        end
+        GameTooltip:AddDoubleLine("Comp", comp.name, 0.7, 0.7, 0.7, 1, 1, 1)
+        if l.haveSpec then
+            GameTooltip:AddLine("Already has: |cff80d8ff" .. ns.SpecTokenLabel(l.haveSpec) .. "|r", 0.7, 0.9, 1, true)
+        end
+        GameTooltip:AddLine("Looking for: |cff80d8ff" .. table.concat(labels, " + ") .. "|r", 0.7, 0.9, 1, true)
+    elseif #partnerSpecs > 0 then
         GameTooltip:AddLine("Looking for: |cff80d8ff" .. table.concat(partnerSpecs, ", ") .. "|r", 0.7, 0.9, 1, true)
     end
     GameTooltip:AddDoubleLine("Experience", ns.TIERS[l.tier] or "?", 0.7, 0.7, 0.7, 1, 1, 1)
@@ -850,6 +861,10 @@ local function BuildFormView(parent, f)
     local m = ns.mine
     local w = {}
     f.mineWidgets = w
+    -- widgets below the seeking rows; LayoutForm shifts them down in 3v3 (extra row)
+    local lower = {}
+    w.lower = lower
+    local function Track(widget, x, y) lower[#lower + 1] = { widget, x, y } end
 
     w.header = MakeLabel(p, "List your group", 12, -10)
     w.char = MakeLabel(p, "", 12, -32, "GameFontHighlight")
@@ -862,7 +877,7 @@ local function BuildFormView(parent, f)
     w.detectedRole = p:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     w.detectedRole:SetPoint("LEFT", w.detectedRoleIcon, "RIGHT", 4, 0)
 
-    MakeLabel(p, "Seeking", 12, -92)
+    w.seekLabel = MakeLabel(p, "Seeking", 12, -92)
     w.targetRole = MakeMenuButton(p, 86,
         function() return ns.PARTNER_ROLES end,
         function() return m.targetRole end,
@@ -905,22 +920,70 @@ local function BuildFormView(parent, f)
         end)
     w.targetSpecs:SetPoint("TOPLEFT", 188, -88)
 
-    MakeLabel(p, "Gearscore", 12, -122)
+    -- 3v3 only: pick a comp (fills in the specs still needed) and whether I already have a partner
+    w.compLabel = MakeLabel(p, "Comp", 12, -92)
+    w.comp = MakeMenuButton(p, 178,
+        function()
+            local values = { "Custom" }
+            for _, c in ipairs(ns.CompsForSpec(ns.GetMySpecId())) do values[#values + 1] = c.name end
+            return values
+        end,
+        function() return m.comp or "Custom" end,
+        function(v)
+            if v == "Custom" then
+                m.comp, m.haveSpec = nil, nil
+                m.targetRole, m.targetAny = "Any", false
+                wipe(m.targetSpecs)
+            else
+                m.comp, m.haveSpec = v, nil
+                ns.ApplyComp(m)
+            end
+            ns.UI_LoadMine()
+        end)
+    w.groupLabel = MakeLabel(p, "Group", 12, -122)
+    local groupChoices = {}
+    w.group = MakeMenuButton(p, 178,
+        function()
+            wipe(groupChoices)
+            local values = { "Alone (need 2)" }
+            local comp = ns.FindComp(m.comp)
+            if comp then
+                for _, slot in ipairs(ns.CompRemainingSlots(comp, ns.GetMySpecId(), nil)) do
+                    local text = "With " .. ns.SpecTokenLabel(slot)
+                    values[#values + 1] = text
+                    groupChoices[text] = slot
+                end
+            end
+            return values
+        end,
+        function()
+            return m.haveSpec and ("With " .. ns.SpecTokenLabel(m.haveSpec)) or "Alone (need 2)"
+        end,
+        function(v)
+            m.haveSpec = groupChoices[v]
+            ns.ApplyComp(m)
+            ns.UI_LoadMine()
+        end)
+
+    Track(MakeLabel(p, "Gearscore", 12, -122), 12, -122)
     w.gs = MakeEdit(p, 70, true, 5)
     w.gs:SetPoint("TOPLEFT", 108, -118)
+    Track(w.gs, 108, -118)
 
     w.team = MakeCheck(p, "I have a 2v2 team")
     w.team:SetPoint("TOPLEFT", 6, -144)
+    Track(w.team, 6, -144)
     w.team:Disable() -- read from the game, not editable
     w.rating = p:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     w.rating:SetPoint("LEFT", _G[w.team:GetName() .. "Text"], "RIGHT", 8, 0)
 
     w.detect = p:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     w.detect:SetPoint("TOPLEFT", 12, -174)
+    Track(w.detect, 12, -174)
     w.detect:SetWidth(268); w.detect:SetHeight(34)
     w.detect:SetJustifyH("LEFT"); w.detect:SetJustifyV("TOP")
 
-    MakeLabel(p, "Experience", 12, -212)
+    Track(MakeLabel(p, "Experience", 12, -212), 12, -212)
     w.tier = MakeMenuButton(p, 150,
         function() return ns.TIERS end,
         function() return ns.TIERS[m.tier] end,
@@ -928,18 +991,23 @@ local function BuildFormView(parent, f)
             for i, t in ipairs(ns.TIERS) do if t == v then m.tier = i end end
         end)
     w.tier:SetPoint("TOPLEFT", 100, -208)
+    Track(w.tier, 100, -208)
 
     w.seasonal = MakeCheck(p, "Seasonal character", function(on) m.seasonal = on end)
     w.seasonal:SetPoint("TOPLEFT", 6, -236)
+    Track(w.seasonal, 6, -236)
     w.ten = MakeCheck(p, "10 games only (arena points)", function(on) m.tenGames = on end)
     w.ten:SetPoint("TOPLEFT", 6, -262)
+    Track(w.ten, 6, -262)
 
-    MakeLabel(p, "Group title / comp (optional)", 12, -298)
+    Track(MakeLabel(p, "Group title (optional)", 12, -298), 12, -298)
     w.note = MakeEdit(p, 256, false, 60)
     w.note:SetPoint("TOPLEFT", 16, -318)
+    Track(w.note, 16, -318)
 
     w.post = MakeButton(p, "List Group", 124, 24)
     w.post:SetPoint("TOPLEFT", 12, -352)
+    Track(w.post, 12, -352)
     w.post:SetScript("OnClick", function() ns.PostMine() end)
     w.back = MakeButton(p, "Back", 124, 24)
     w.back:SetPoint("LEFT", w.post, "RIGHT", 6, 0)
@@ -948,18 +1016,52 @@ local function BuildFormView(parent, f)
     return p
 end
 
+-- Seeking rows depend on the bracket: 3v3 has a comp row plus either the group row
+-- (comp chosen) or the custom role/spec row.
+local function LayoutForm(f)
+    local m, w = ns.mine, f.mineWidgets
+    local is3v3 = m.bracket == "3v3"
+    local compMode = is3v3 and m.comp ~= nil
+    local function Put(widget, x, y)
+        widget:ClearAllPoints()
+        widget:SetPoint("TOPLEFT", x, y)
+    end
+    local function Vis(widget, on)
+        if on then widget:Show() else widget:Hide() end
+    end
+    local dy = 0
+    if is3v3 then
+        dy = 28
+        Put(w.compLabel, 12, -92); Put(w.comp, 100, -88)
+        if compMode then
+            Put(w.groupLabel, 12, -122); Put(w.group, 100, -118)
+        else
+            Put(w.seekLabel, 12, -122); Put(w.targetRole, 100, -118); Put(w.targetSpecs, 188, -118)
+        end
+    else
+        Put(w.seekLabel, 12, -92); Put(w.targetRole, 100, -88); Put(w.targetSpecs, 188, -88)
+    end
+    Vis(w.compLabel, is3v3); Vis(w.comp, is3v3)
+    Vis(w.groupLabel, compMode); Vis(w.group, compMode)
+    Vis(w.seekLabel, not compMode); Vis(w.targetRole, not compMode); Vis(w.targetSpecs, not compMode)
+    for _, t in ipairs(w.lower) do Put(t[1], t[2], t[3] - dy) end
+end
+
 function ns.UI_LoadMine()
     local f = ns.frame
     if not f then return end
     local m, w = ns.mine, f.mineWidgets
     local info = ns.DetectMine()
+    ns.SanitizeMine()
+    if m.comp then ns.ApplyComp(m) end -- recompute after a respec
+    LayoutForm(f)
 
     local c = RAID_CLASS_COLORS[ns.GetMyClass()] or { r = 1, g = 1, b = 1 }
     w.char:SetText(UnitName("player") .. "  -  " .. (UnitClass("player")) .. ", " .. ns.GetMySpec())
     w.char:SetTextColor(c.r, c.g, c.b)
     SetRoleIcon(w.detectedRoleIcon, m.role)
     w.detectedRole:SetText(ROLE_TEXT[m.role] or m.role)
-    w.tier:Refresh(); w.targetRole:Refresh(); w.targetSpecs:Refresh()
+    w.tier:Refresh(); w.targetRole:Refresh(); w.targetSpecs:Refresh(); w.comp:Refresh(); w.group:Refresh()
     w.gs:SetText(m.gs > 0 and m.gs or "")
     w.gs:EnableMouse(not info.gs)
     w.gs:EnableKeyboard(not info.gs)
@@ -1031,7 +1133,7 @@ function ns.SetViewBracket(bracket)
 end
 
 function ns.PostMine()
-    if ns.InGroup() then
+    if ns.GroupBlocksListing() then
         ns.Print("You are already in a group. Leave it before listing your group.")
         return
     end

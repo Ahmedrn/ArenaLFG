@@ -91,9 +91,9 @@ local function CompleteJoin()
     if ns.DEBUG then ns.Debug("joined sync channel, id " .. chanId) end
     ns.Comm_Request() -- ask others to announce themselves
     if ns.DB then
-        if ns.InGroup() or ns.InPvpInstance() then
+        if ns.GroupBlocksListing() then
             if ns.mine.posted then
-                ns.Print("You are grouped or in an arena/battleground, so your saved listing was removed.")
+                ns.Print("You are grouped, so your saved listing was removed.")
                 ns.RemoveMine()
             else
                 ns.BroadcastRemove()
@@ -187,8 +187,18 @@ local function BuildAnnouncement()
         or ((spec and spec ~= "None" and (spec .. " ") or "") .. (class or ""))
     if owner == "" then owner = "arena player" end
 
-    local targets = {}
-    if type(listing.targetSpecs) == "table" then
+    local targets, separator = {}, "/"
+    local comp = listing.targetRole == "Comp" and ns.FindComp(listing.comp)
+    if comp then
+        -- every remaining slot of the comp is needed, so join with "+"
+        separator = "+"
+        if listing.haveSpec then
+            owner = owner .. "+" .. (SPEC_ABBREVIATIONS[listing.haveSpec] or ns.SpecTokenLabel(listing.haveSpec))
+        end
+        for _, slot in ipairs(ns.CompRemainingSlots(comp, specId, listing.haveSpec)) do
+            targets[#targets + 1] = SPEC_ABBREVIATIONS[slot] or ns.SpecTokenLabel(slot)
+        end
+    elseif type(listing.targetSpecs) == "table" then
         for _, partnerSpec in ipairs(ns.PARTNER_SPECS) do
             if partnerSpec.role == listing.targetRole and listing.targetSpecs[partnerSpec.id] then
                 targets[#targets + 1] = SPEC_ABBREVIATIONS[partnerSpec.id] or partnerSpec.label
@@ -197,7 +207,7 @@ local function BuildAnnouncement()
     end
     local lookingFor
     if #targets > 0 and #targets <= 2 then
-        lookingFor = table.concat(targets, "/")
+        lookingFor = table.concat(targets, separator)
     elseif listing.targetRole and listing.targetRole ~= "Any" then
         lookingFor = listing.targetRole
     else
@@ -217,7 +227,7 @@ end
 
 function ns.TryAnnounceMine()
     if not (ns.DB and ns.DB.announce and ns.mine and ns.mine.posted) then return false end
-    if ns.InGroup() or ns.InPvpInstance() then return false end
+    if ns.GroupBlocksListing() or ns.InPvpInstance() then return false end
 
     local now = time()
     local lastAnnounceAt = tonumber(ns.SV.announceLastAt) or 0
@@ -251,7 +261,7 @@ function ns.GetAnnounceStatus()
     if not (ns.mine and ns.mine.posted) then
         return "Global announcement: list your group first"
     end
-    if ns.InGroup() or ns.InPvpInstance() then
+    if ns.GroupBlocksListing() or ns.InPvpInstance() then
         return "Global announcement paused while grouped or in PvP"
     end
 
