@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0
 
 - Import 3v3 (`3v3`, `3s`, `3c3`...) and duo (`duo`, `duoq`) ads from Global chat into the matching tab.
 - Partner match alerts only fire for the bracket you are looking in and name it; DuoQ listings without a Solo Queue team show as Unrated.
