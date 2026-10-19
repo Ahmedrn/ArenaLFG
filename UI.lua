@@ -590,6 +590,7 @@ function ns.OpenShareMenu(anchor)
     local inParty = (GetNumPartyMembers() > 0) or (GetNumRaidMembers() > 0)
     local inInstance, instanceType = IsInInstance()
     local isArena = inInstance and (instanceType == "arena" or instanceType == "pvp")
+    local isBG = inInstance and instanceType == "pvp"
     local channelName = ns.DB and ns.DB.globalChannel or "Global"
     local channelId = tonumber((GetChannelName(channelName))) or 0
     local targetName = UnitIsPlayer("target") and UnitName("target")
@@ -610,12 +611,22 @@ function ns.OpenShareMenu(anchor)
     }
 
     if isArena or inParty then
-        local label = isArena and "Party / Arena (SoloQ)" or "Party / Group"
+        local label = isArena and not isBG and "Party / Arena (SoloQ)" or "Party / Group"
         tinsert(menu, {
             text = label,
             notCheckable = true,
             func = function()
                 ChatFrame_OpenChat("/p Need an arena partner? Get ArenaLFG: browse 2v2, 3v3 and DuoQ groups and sign up in one click: https://warperia.com/addon-wotlk/arenalfg/")
+            end,
+        })
+    end
+
+    if isBG then
+        tinsert(menu, {
+            text = "Battleground",
+            notCheckable = true,
+            func = function()
+                ChatFrame_OpenChat("/bg Need an arena partner? Get ArenaLFG: browse 2v2, 3v3 and DuoQ groups and sign up in one click: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end
