@@ -101,15 +101,18 @@ local function MakePanel(parent, w, h)
     return p
 end
 
+-- These return true when the icon is a square one (spec / fallback) that gets a dark
+-- border behind it, false for the round class icon, which must not have one.
 local function SetClassIcon(tex, class)
     local tc = CLASS_ICON_TCOORDS[class]
     if not tc then
         tex:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
         tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        return
+        return true
     end
     tex:SetTexture(CLASS_TEX)
     tex:SetTexCoord(unpack(tc))
+    return false
 end
 
 local function SetSpecIcon(tex, class)
@@ -117,9 +120,9 @@ local function SetSpecIcon(tex, class)
     if specIcon then
         tex:SetTexture("Interface\\Icons\\" .. specIcon)
         tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    else
-        SetClassIcon(tex, class)
+        return true
     end
+    return SetClassIcon(tex, class)
 end
 
 local function SetListingSpecIcon(tex, listing)
@@ -127,9 +130,13 @@ local function SetListingSpecIcon(tex, listing)
     if specIcon then
         tex:SetTexture("Interface\\Icons\\" .. specIcon)
         tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    else
-        SetClassIcon(tex, listing.class)
+        return true
     end
+    return SetClassIcon(tex, listing.class)
+end
+
+local function ShowIconBorder(border, square)
+    if square then border:Show() else border:Hide() end
 end
 
 local function FactionRaceMarkup(race)
@@ -448,7 +455,7 @@ local function RefreshList()
         local row, l = f.rows[i], list[i + offset]
         if l then
             row.data = l
-            SetListingSpecIcon(row.icon, l)
+            ShowIconBorder(row.iconBorder, SetListingSpecIcon(row.icon, l))
             SetRoleIcon(row.roleIcon, l.role)
             local faction = ns.GetFaction(l.race)
             local textX = 8
@@ -819,7 +826,7 @@ local function RefreshGroupView()
         or (minutes == 1 and "1 min ago" or minutes .. " min ago")) .. "|r"
     w.info:SetText(table.concat(info, "   "))
     w.announceStatus:SetText(ns.GetAnnounceStatus and ns.GetAnnounceStatus() or "")
-    SetSpecIcon(w.icon, me.class)
+    ShowIconBorder(w.iconBorder, SetSpecIcon(w.icon, me.class))
 
     local list = {}
     for _, l in pairs(ns.applicants) do list[#list + 1] = l end
