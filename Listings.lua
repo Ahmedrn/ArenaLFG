@@ -134,12 +134,16 @@ function ns.CheckPartnerMatch(l)
         local namePart = string.format("|cff%02x%02x%02x%s|r",
             math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255), l.name)
         local sourceTag = (l.source == "global") and "|cff64b5f6[Chat Ad]|r" or "|cff69f0ae[ArenaLFG]|r"
-        ns.Print(string.format("%s %s (%s) is looking for %s!",
-            sourceTag, namePart, l.spec or l.class, ns.GetMySpec and ns.GetMySpec() or "your spec"))
-        ns.PlayAlertSound("ReadyCheck")
+        local who = l.spec and l.spec ~= "Unknown" and l.spec
+            or (l.class ~= "UNKNOWN" and LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[l.class])
+        ns.Print(string.format("%s %s%s is looking for %s!",
+            sourceTag, namePart, who and (" (" .. who .. ")") or "",
+            ns.GetMySpec and ns.GetMySpec() or "your spec"))
+        ns.PlayAlert("match")
         if RaidNotice_AddMessage and RaidWarningFrame then
             RaidNotice_AddMessage(RaidWarningFrame,
-                string.format("|cff33ff99[ArenaLFG]|r %s (%s) wants %s!", l.name, l.spec or l.class, ns.GetMySpec and ns.GetMySpec() or "your spec"),
+                string.format("|cff33ff99[ArenaLFG]|r %s%s wants %s!", l.name, who and (" (" .. who .. ")") or "",
+                    ns.GetMySpec and ns.GetMySpec() or "your spec"),
                 ChatTypeInfo["RAID_WARNING"])
         end
     end

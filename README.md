@@ -10,10 +10,11 @@
 
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
 - **Chat ad import:** clear 2v2 partner ads can appear as temporary listings. Parsed details may be incomplete or inaccurate. The selected-ad button opens a whisper; use the row's right-click menu to invite.
-- **Optional Global announcement:** opt in to share your listed group in Global. Posts are public and subject to server chat rules; toggle announcements with `/alfg announce on` or `/alfg announce off`.
+- **Optional Global announcement:** opt in to share your listed group in Global. Posts are public and subject to server chat rules; toggle announcements and set how often they post (every 2 to 30 minutes) in the options, or use `/alfg announce on` / `/alfg announce off`.
 - **Share ArenaLFG:** prefill a Global chat invitation from the Share button, then review and send it yourself.
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
-- **Application alerts:** incoming sign-ups are reported in chat, with a sound alert when the ArenaLFG window is closed.
+- **Alerts:** sign-ups and invites are announced on screen and in chat with a sound, and partner match alerts (a group or Global ad looking for your spec) use a softer sound. Both sounds can be changed in the options.
+- **Options and profiles:** all settings are in *Interface > AddOns > ArenaLFG* (or `/alfg options`, or right-click the minimap button), including the Global announcement frequency. Settings live in profiles you can switch, create, copy, delete and reset; characters share the "Default" profile unless you pick another one.
 - **List your group** with role, gearscore, experience tier, preferred partner specs, a short title and flags (seasonal character, 10 games for arena points). The listed-group card mirrors the browser listing and shows your race, class-colored name, role, title, team details and listing age. Settings are saved separately for each character.
 - **Preferred partner specs:** choose a role, then select one or more specs or choose **Any spec** (for example, Healer → Holy Paladin and Restoration Druid, or any Healer); their icons or role preference appear in the displayed group title.
 - **Auto-detection**: your class, race, spec, 2v2 team and team rating are read from the game. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
@@ -58,6 +59,8 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | --- | --- |
 | `/alfg` or `/arenalfg` | Toggle the window |
 | `/alfg help` | Show available commands and what they do |
+| `/alfg options` | Open the options page |
+| `/alfg version` | Show the installed ArenaLFG version |
 | `/alfg minimap` | Show or hide the minimap button |
 | `/alfg pvp` | Toggle PvP window integration (enabled by default; also controlled by the main-window checkbox) |
 | `/alfg me` | Print what the addon detects about your character (class, spec, GS, arena teams) |

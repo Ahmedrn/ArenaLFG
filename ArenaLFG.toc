@@ -19,3 +19,4 @@ GlobalParser.lua
 Comm.lua
 Minimap.lua
 UI.lua
+Options.lua

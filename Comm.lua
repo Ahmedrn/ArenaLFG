@@ -8,7 +8,6 @@ local ADDON, ns = ...
 local chanId = 0
 local lower = string.lower
 local REQUEST_COOLDOWN = 10
-local ANNOUNCE_INTERVAL = 2 * 60
 local JOIN_MAX_ATTEMPTS = 3
 local JOIN_RETRY_DELAY = 5
 local SPEC_ABBREVIATIONS = {
@@ -27,6 +26,18 @@ local lastBroadcastAt
 local lastRequestAt
 local requestResponsePending = false
 local joinInProgress = false
+
+local function AnnounceIntervalMinutes()
+    local minutes = tonumber(ns.DB and ns.DB.announceInterval) or ns.ANNOUNCE_MIN_INTERVAL
+    return math.max(ns.ANNOUNCE_MIN_INTERVAL, math.min(math.floor(minutes), ns.ANNOUNCE_MAX_INTERVAL))
+end
+
+function ns.SetAnnounceInterval(minutes)
+    if not ns.DB then return end
+    ns.DB.announceInterval = math.floor(tonumber(minutes) or ns.ANNOUNCE_MIN_INTERVAL)
+    ns.DB.announceInterval = AnnounceIntervalMinutes()
+    ns.Changed()
+end
 
 local function RefreshChannelId()
     chanId = tonumber((GetChannelName(ns.CHANNEL))) or 0
@@ -141,12 +152,14 @@ end
 
 function ns.SetAnnounceEnabled(enabled)
     if not ns.DB then return end
-    ns.DB.announceAsked = true
+    ns.SV.announceAsked = true
     ns.DB.announce = enabled and true or false
+    local minutes = AnnounceIntervalMinutes()
     ns.Print("Global group announcements " .. (ns.DB.announce and "enabled" or "disabled")
-        .. (ns.DB.announce and ". Your group will be announced while listed, at most once every 2 minutes."
-            or "."))
+        .. (ns.DB.announce and (". Your group will be announced while listed, at most once every "
+            .. minutes .. " minutes.") or "."))
     if ns.DB.announce then ns.TryAnnounceMine() end
+    if ns.RefreshOptions then ns.RefreshOptions() end
     ns.Changed()
 end
 
@@ -194,8 +207,8 @@ function ns.TryAnnounceMine()
     if ns.InGroup() or ns.InPvpInstance() then return false end
 
     local now = time()
-    local lastAnnounceAt = tonumber(ns.DB.announceLastAt) or 0
-    if now - lastAnnounceAt < ANNOUNCE_INTERVAL then return false end
+    local lastAnnounceAt = tonumber(ns.SV.announceLastAt) or 0
+    if now - lastAnnounceAt < AnnounceIntervalMinutes() * 60 then return false end
 
     local channelName = ns.DB and ns.DB.globalChannel
     if type(channelName) ~= "string" or channelName == "" then
@@ -208,12 +221,12 @@ function ns.TryAnnounceMine()
     if not message then return false end
     local ok, err = pcall(SendChatMessage, message, "CHANNEL", nil, channelId)
     if not ok then
-        ns.DB.announceLastAt = now
+        ns.SV.announceLastAt = now
         ns.Print("Could not announce your group: " .. tostring(err))
         ns.Changed()
         return false
     end
-    ns.DB.announceLastAt = now
+    ns.SV.announceLastAt = now
     ns.Changed()
     return true
 end
@@ -235,7 +248,7 @@ function ns.GetAnnounceStatus()
         return "Join " .. tostring(channelName or "Global") .. " to announce"
     end
 
-    local remaining = ANNOUNCE_INTERVAL - (time() - (tonumber(ns.DB.announceLastAt) or 0))
+    local remaining = AnnounceIntervalMinutes() * 60 - (time() - (tonumber(ns.SV.announceLastAt) or 0))
     if remaining <= 0 then
         return "Global post ready (within 30 sec)"
     end
@@ -326,7 +339,7 @@ af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
         if l then
             ns.AddApplicant(l)
             ns.Print(sender .. " signed up for your group.")
-            ns.PlayAlertSound("ReadyCheck")
+            ns.PlayAlert("applicant")
             if RaidNotice_AddMessage and RaidWarningFrame then
                 RaidNotice_AddMessage(RaidWarningFrame,
                     "|cff33ff99[ArenaLFG]|r " .. sender .. " signed up for your group!",

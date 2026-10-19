@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add an options page under Interface > AddOns > ArenaLFG (also `/alfg options` or right-click the minimap button) with all settings, Global announcement on/off and frequency (2-30 minutes), and alert sound choices.
+- Add profiles (switch, create, copy, delete, reset) shared across characters; existing settings move to the "Default" profile.
+- Use a group-invite chime for sign-ups and a softer, separate sound for partner match alerts; both can be changed in the options.
+- Hide the role and spec when they are unknown (for example, on some Global chat ads).
+- Show the addon version in the main window, minimap tooltip and options, and with `/alfg version`.
+
 ## 1.4.0
 
 - Add opt-in Global announcements for listed groups and a Share button for Global.

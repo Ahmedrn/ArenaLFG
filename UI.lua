@@ -28,6 +28,11 @@ local ROLE_TEXT = {
     Tank   = "|cff60a0ffTank|r",
 }
 
+-- Unknown roles (e.g. from chat ads) are left blank
+local function RoleText(role)
+    return ROLE_TEXT[role] or ""
+end
+
 local ROLE_ICONS = {
     Tank   = { 0, 19/64, 22/64, 41/64 },
     Healer = { 20/64, 39/64, 1/64, 20/64 },
@@ -248,7 +253,11 @@ local function ShowTooltip(row)
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     GameTooltip:AddLine(ns.ListingTitle(l), 1, 0.82, 0, true)
     local roleMarkup = GetRoleMarkup(l.role)
-    GameTooltip:AddLine(roleMarkup .. l.name .. "  -  " .. l.spec .. " " .. l.role, c.r, c.g, c.b)
+    local who = {}
+    if l.spec and l.spec ~= "Unknown" then who[#who + 1] = l.spec end
+    if ROLE_TEXT[l.role] then who[#who + 1] = l.role end
+    GameTooltip:AddLine(roleMarkup .. l.name .. (#who > 0 and ("  -  " .. table.concat(who, " ")) or ""),
+        c.r, c.g, c.b)
     if l.source == "global" then
         GameTooltip:AddLine("Parsed from chat; details may be incomplete.", 0.7, 0.7, 0.7, true)
     end
@@ -482,7 +491,7 @@ local function RefreshList()
             local minutes = math.floor(age / 60)
             row.age:SetText(minutes == 0 and "just now"
                 or (minutes == 1 and "1 min ago" or minutes .. " min ago"))
-            row.role:SetText(ROLE_TEXT[l.role] or ("|cff888888" .. (l.role or "") .. "|r"))
+            row.role:SetText(RoleText(l.role))
             if l.name == me then
                 row.status:SetText("|cff69f0ae[Your Group]|r")
             elseif l.source == "global" then
@@ -723,7 +732,9 @@ local function BuildGroupView(parent, f)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:AddLine(a.name, c.r, c.g, c.b)
             local roleMarkup = GetRoleMarkup(a.role)
-            GameTooltip:AddLine(roleMarkup .. (a.spec or "") .. " " .. (a.role or ""), 0.9, 0.9, 0.9)
+            local spec = a.spec ~= "Unknown" and a.spec or ""
+            GameTooltip:AddLine(roleMarkup .. strtrim(spec .. " " .. (ROLE_TEXT[a.role] and a.role or "")),
+                0.9, 0.9, 0.9)
             if a.gs and a.gs > 0 then
                 GameTooltip:AddDoubleLine("GearScore", tostring(a.gs), 0.7, 0.7, 0.7, 0.3, 1, 0.3)
             end
@@ -772,7 +783,7 @@ local function RefreshGroupView()
     w.name:SetText(FactionRaceMarkup(me.race) .. string.format("|cff%02x%02x%02x%s|r",
         math.floor(c.r * 255), math.floor(c.g * 255), math.floor(c.b * 255), me.name))
     SetRoleIcon(w.roleIcon, me.role)
-    w.role:SetText(ROLE_TEXT[me.role] or me.role)
+    w.role:SetText(RoleText(me.role))
     w.title:SetText(ns.ListingTitle(me))
     w.sub:SetText("|cffaaaaaaExp:|r |cffcccccc" .. (ns.TIERS[me.tier] or "?") .. "|r   "
         .. (me.hasTeam and ("|cffffd100Team " .. me.teamRating .. "|r") or "|cff777777No team|r"))
@@ -803,7 +814,7 @@ local function RefreshGroupView()
             r.name:SetTextColor(c.r, c.g, c.b)
             SetListingSpecIcon(r.specIcon, l)
             SetRoleIcon(r.roleIcon, l.role)
-            r.role:SetText(ROLE_TEXT[l.role] or l.role)
+            r.role:SetText(RoleText(l.role))
             r.gs:SetText(l.gs > 0 and ("|cff55ff55" .. l.gs .. "|r") or "|cff777777-|r")
             r:Show()
         else
@@ -1130,6 +1141,14 @@ function ns.BuildUI()
         GameTooltip:Show()
     end)
     f.matchCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    local options = MakeButton(f, "Options", 70, 20)
+    options:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -24, 18)
+    options:SetScript("OnClick", function() ns.OpenOptions() end)
+
+    local version = f:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    version:SetPoint("RIGHT", options, "LEFT", -8, 0)
+    version:SetText("v" .. ns.VERSION)
 
     local listedHeader = MakeLabel(right, "Listed", 216, -55, "GameFontDisableSmall")
     listedHeader:SetWidth(80)

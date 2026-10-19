@@ -1,7 +1,7 @@
 local ADDON, ns = ...
 _G.ArenaLFG = ns -- handy in game: /run print(ArenaLFG.VERSION)
 
-ns.VERSION   = "1.4.0"
+ns.VERSION   = GetAddOnMetadata(ADDON, "Version") or "unknown"
 ns.PREFIX    = "ARENALFG"       -- addon message prefix
 ns.CHANNEL   = "ArenaLFGSync"   -- hidden sync channel
 ns.EXPIRE    = 150            -- seconds without heartbeat before a listing disappears
@@ -53,32 +53,53 @@ function ns.Every(sec, fn)  table.insert(timers, { left = sec, every = sec, fn =
 ----------------------------------------------------------------------
 -- Saved variables
 ----------------------------------------------------------------------
+-- Account-wide data lives in ArenaLFGDB itself (ns.SV); every setting that can
+-- be changed in the options lives in a named profile (ns.DB). Characters pick a
+-- profile, "Default" unless they switch.
 local defaults = {
     debug = false,
-    globalChannel = "Global",
     announceAsked = false,
-    announce = false,
     announceLastAt = 0,
+    characters = {},
+    profiles = {},
+    profileKeys = {},
+}
+
+local profileDefaults = {
+    globalChannel = "Global",
+    announce = false,
+    announceInterval = 2, -- minutes between Global announcements
     pvpIntegration = true,
     soundAlerts = true,
     matchAlerts = true,
-    alertSound = "ReadyCheck",
+    applicantSound = "igPlayerInvite",
+    matchSound = "MapPing",
     minimap = { angle = 200, hide = false },
-    mine = {
-        role = "DPS", gs = 0,
-        hasTeam = false, teamRating = 0,
-        tier = 1, seasonal = false, tenGames = false,
-        note = "", targetRole = "Any", targetAny = false, targetSpecs = {}, posted = false,
-    },
-    characters = {},
     filters = { role = "Any", team = "Any", seasonal = "Any", tenGames = false },
 }
+ns.PROFILE_DEFAULTS = profileDefaults
+ns.DEFAULT_PROFILE = "Default"
+ns.ANNOUNCE_MIN_INTERVAL = 2
+ns.ANNOUNCE_MAX_INTERVAL = 30
 
-function ns.PlayAlertSound(soundName)
-    if not (ns.DB and ns.DB.soundAlerts) then return end
-    local snd = soundName or (ns.DB and ns.DB.alertSound) or "ReadyCheck"
-    pcall(PlaySound, snd)
-end
+local mineDefaults = {
+    role = "DPS", gs = 0,
+    hasTeam = false, teamRating = 0,
+    tier = 1, seasonal = false, tenGames = false,
+    note = "", targetRole = "Any", targetAny = false, targetSpecs = {}, posted = false,
+}
+
+-- Stock 3.3.5 sound kits that can be picked for the alerts
+ns.SOUNDS = {
+    { key = "ReadyCheck", label = "Ready check" },
+    { key = "igPlayerInvite", label = "Group invite" },
+    { key = "PVPENTERQUEUE", label = "PvP queue" },
+    { key = "RaidWarning", label = "Raid warning" },
+    { key = "AuctionWindowOpen", label = "Auction bell" },
+    { key = "TellMessage", label = "Whisper" },
+    { key = "MapPing", label = "Map ping (soft)" },
+    { key = "igMainMenuOptionCheckBoxOn", label = "Click (very soft)" },
+}
 
 local function CopyDefaults(src, dst)
     for k, v in pairs(src) do
@@ -89,6 +110,131 @@ local function CopyDefaults(src, dst)
             dst[k] = v
         end
     end
+end
+
+local function CopyTable(src)
+    local out = {}
+    for k, v in pairs(src) do
+        out[k] = type(v) == "table" and CopyTable(v) or v
+    end
+    return out
+end
+
+----------------------------------------------------------------------
+-- Profiles
+----------------------------------------------------------------------
+local function CharacterKey()
+    local player, realm = UnitName("player"), GetRealmName()
+    if not player or player == "" or not realm or realm == "" then return nil end
+    return player .. " - " .. realm
+end
+
+-- Settings that used to sit at the top level move into the Default profile
+local function MigrateLegacySettings(sv)
+    if sv.profilesMigrated then return end
+    local profile = sv.profiles[ns.DEFAULT_PROFILE] or {}
+    for key in pairs(profileDefaults) do
+        if sv[key] ~= nil then
+            if profile[key] == nil then profile[key] = sv[key] end
+            sv[key] = nil
+        end
+    end
+    sv.alertSound = nil -- replaced by applicantSound / matchSound
+    sv.profiles[ns.DEFAULT_PROFILE] = profile
+    sv.profilesMigrated = true
+end
+
+function ns.GetProfileName()
+    local key = CharacterKey()
+    return key and ns.SV.profileKeys[key] or ns.DEFAULT_PROFILE
+end
+
+function ns.GetProfileNames()
+    local names = {}
+    for name in pairs(ns.SV.profiles) do names[#names + 1] = name end
+    table.sort(names)
+    return names
+end
+
+local function ApplyProfile()
+    if ns.UpdateMinimapButton then ns.UpdateMinimapButton() end
+    if ns.frame and ns.frame.pvpCheck then
+        ns.frame.pvpCheck:SetChecked(ns.DB.pvpIntegration)
+        ns.frame.soundCheck:SetChecked(ns.DB.soundAlerts)
+        ns.frame.matchCheck:SetChecked(ns.DB.matchAlerts)
+    end
+    if ns.RefreshOptions then ns.RefreshOptions() end
+    ns.Changed()
+end
+
+function ns.SetProfile(name)
+    if type(name) ~= "string" then return false end
+    name = strtrim(name)
+    if name == "" or #name > 32 or name:find("|", 1, true) then return false end
+    ns.SV.profiles[name] = ns.SV.profiles[name] or {}
+    CopyDefaults(profileDefaults, ns.SV.profiles[name])
+    local key = CharacterKey()
+    if key then ns.SV.profileKeys[key] = name end
+    ns.DB = ns.SV.profiles[name]
+    ApplyProfile()
+    return true
+end
+
+function ns.CopyProfile(from)
+    local source = ns.SV.profiles[from]
+    if not source or source == ns.DB then return false end
+    wipe(ns.DB)
+    for k, v in pairs(source) do
+        ns.DB[k] = type(v) == "table" and CopyTable(v) or v
+    end
+    CopyDefaults(profileDefaults, ns.DB)
+    ApplyProfile()
+    return true
+end
+
+function ns.DeleteProfile(name)
+    if not ns.SV.profiles[name] or name == ns.GetProfileName() then return false end
+    ns.SV.profiles[name] = nil
+    for key, profile in pairs(ns.SV.profileKeys) do
+        if profile == name then ns.SV.profileKeys[key] = nil end
+    end
+    return true
+end
+
+function ns.ResetProfile()
+    wipe(ns.DB)
+    CopyDefaults(profileDefaults, ns.DB)
+    ApplyProfile()
+end
+
+----------------------------------------------------------------------
+-- Alert sounds
+----------------------------------------------------------------------
+local function IsKnownSound(key)
+    for _, sound in ipairs(ns.SOUNDS) do
+        if sound.key == key then return true end
+    end
+    return false
+end
+
+-- Plays regardless of settings; used by the options' Test buttons
+function ns.PreviewSound(key)
+    if IsKnownSound(key) then pcall(PlaySound, key) end
+end
+
+function ns.PlayAlertSound(soundName)
+    if not (ns.DB and ns.DB.soundAlerts) then return end
+    pcall(PlaySound, soundName or profileDefaults.applicantSound)
+end
+
+-- kind is "applicant" (someone signed up to my group) or "match" (a listing
+-- looking for my spec)
+function ns.PlayAlert(kind)
+    if not ns.DB then return end
+    local key = kind == "match" and "matchSound" or "applicantSound"
+    local sound = ns.DB[key]
+    if not IsKnownSound(sound) then sound = profileDefaults[key] end
+    ns.PlayAlertSound(sound)
 end
 
 local ev = CreateFrame("Frame")
@@ -107,18 +253,18 @@ local function ShowAnnouncePrompt(force)
         pendingAnnouncePrompt = false
         forceAnnouncePrompt = false
         ev:UnregisterEvent("PLAYER_REGEN_ENABLED")
-        ns.DB.announceAsked = true
+        ns.SV.announceAsked = true
         popup:SetWidth(440)
-        popup:SetHeight(280)
+        popup:SetHeight(300)
         local popupText = _G[popup:GetName() .. "Text"]
         if popupText then popupText:SetWidth(390) end
         popup:ClearAllPoints()
         popup:SetPoint("CENTER", UIParent, "CENTER", 0, -80)
-    elseif ns.DB and (force or not ns.DB.announceAsked) then
+    elseif ns.DB and (force or not ns.SV.announceAsked) then
         pendingAnnouncePrompt = true
         ns.After(5, function()
             if pendingAnnouncePrompt and ns.DB
-                and (forceAnnouncePrompt or not ns.DB.announceAsked) then
+                and (forceAnnouncePrompt or not ns.SV.announceAsked) then
                 ShowAnnouncePrompt(forceAnnouncePrompt)
             end
         end)
@@ -133,7 +279,12 @@ ev:SetScript("OnEvent", function(self, event, arg1)
         ArenaLFGDB = ArenaLFGDB or {}
         local legacyMine = ArenaLFGDB.mine
         CopyDefaults(defaults, ArenaLFGDB)
-        ns.DB = ArenaLFGDB
+        ns.SV = ArenaLFGDB
+        MigrateLegacySettings(ArenaLFGDB)
+        local profileName = ns.GetProfileName()
+        ArenaLFGDB.profiles[profileName] = ArenaLFGDB.profiles[profileName] or {}
+        ns.DB = ArenaLFGDB.profiles[profileName]
+        CopyDefaults(profileDefaults, ns.DB)
 
         local realm, player = GetRealmName(), UnitName("player")
         local mine
@@ -155,7 +306,7 @@ ev:SetScript("OnEvent", function(self, event, arg1)
             mine = realmCharacters[player].mine
         end
 
-        CopyDefaults(defaults.mine, mine)
+        CopyDefaults(mineDefaults, mine)
         ns.mine = mine
         ArenaLFGDB.mine = nil
         local postedAt = tonumber(ns.mine.postedAt)
@@ -165,22 +316,23 @@ ev:SetScript("OnEvent", function(self, event, arg1)
             ns.mine.postedAt = nil
         end
         ns.mine.roleManual = nil
-        ns.DEBUG = ns.DB.debug
+        ns.DEBUG = ns.SV.debug
         local okRole = false
         for _, r in ipairs(ns.ROLES) do if r == ns.mine.role then okRole = true end end
         if not okRole then ns.mine.role = "DPS" end
         ns.BuildMinimapButton()
+        if ns.BuildOptions then ns.BuildOptions() end
     elseif event == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         ns.After(5, ns.Comm_Join) -- channels are not ready right at login
         ns.After(8, ns.RequestArenaData)
         ns.After(5, function()
-            if ns.DB and not ns.DB.announceAsked and ShowAnnouncePrompt() then
-                ns.DB.announceAsked = true
+            if ns.DB and not ns.SV.announceAsked and ShowAnnouncePrompt() then
+                ns.SV.announceAsked = true
             end
         end)
     elseif event == "PLAYER_REGEN_ENABLED" and pendingAnnouncePrompt then
-        if ns.DB and (forceAnnouncePrompt or not ns.DB.announceAsked) then
+        if ns.DB and (forceAnnouncePrompt or not ns.SV.announceAsked) then
             ShowAnnouncePrompt(forceAnnouncePrompt)
         else
             pendingAnnouncePrompt = false
@@ -191,7 +343,7 @@ ev:SetScript("OnEvent", function(self, event, arg1)
 end)
 
 StaticPopupDialogs["ARENALFG_ANNOUNCE_ONBOARDING"] = {
-    text = "Thanks for installing ArenaLFG!\n\nWant ArenaLFG to announce your group in Global chat when you list it, so players without the addon can find you too?\n\nExample:\nDisc LF Hpal/Rdruid 2v2 951cr Exp: 2200+ (ArenaLFG)\n\n- Posted under your name, at most once every 2 minutes, only while your group is listed.\n- Server chat rules apply to you as if you typed it yourself.\n\nChange it anytime with /alfg announce on or /alfg announce off.",
+    text = "Thanks for installing ArenaLFG!\n\nWant ArenaLFG to announce your group in Global chat when you list it, so players without the addon can find you too?\n\nExample:\nDisc LF Hpal/Rdruid 2v2 951cr Exp: 2200+ (ArenaLFG)\n\n- Posted under your name, at most once every 2 minutes (adjustable in the options), only while your group is listed.\n- Server chat rules apply to you as if you typed it yourself.\n\nChange it anytime in Interface > AddOns > ArenaLFG or with /alfg announce on|off.",
     button1 = "Yes, announce my group",
     button2 = "No thanks",
     OnAccept = function()
@@ -220,6 +372,8 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("ArenaLFG commands:")
         ns.Print("/alfg or /arenalfg - Toggle the ArenaLFG window.")
         ns.Print("/alfg help - Show this command list.")
+        ns.Print("/alfg options - Open the ArenaLFG options.")
+        ns.Print("/alfg version - Show the installed ArenaLFG version.")
         ns.Print("/alfg minimap - Show or hide the minimap button.")
         ns.Print("/alfg pvp - Toggle PvP window integration (enabled by default).")
         ns.Print("/alfg me - Show detected character and arena team information.")
@@ -232,6 +386,10 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.Print("/alfg sound test - Test play alert sounds.")
         ns.Print("/alfg debug - Toggle debug messages.")
         ns.Print("/alfg clear - Clear the local group list.")
+    elseif msg == "version" or msg == "ver" or msg == "v" then
+        ns.Print("Version " .. ns.VERSION)
+    elseif msg == "options" or msg == "config" or msg == "opt" then
+        ns.OpenOptions()
     elseif msg == "announce on" then
         ns.SetAnnounceEnabled(true)
     elseif msg == "announce off" then
@@ -249,13 +407,15 @@ SlashCmdList["ARENALFG"] = function(msg)
     elseif msg == "sound" then
         ns.DB.soundAlerts = not ns.DB.soundAlerts
         if ns.frame and ns.frame.soundCheck then ns.frame.soundCheck:SetChecked(ns.DB.soundAlerts) end
+        ns.RefreshOptions()
         ns.Print("Audio alerts " .. (ns.DB.soundAlerts and "enabled" or "disabled") .. ".")
     elseif msg == "match" then
         ns.DB.matchAlerts = not ns.DB.matchAlerts
         if ns.frame and ns.frame.matchCheck then ns.frame.matchCheck:SetChecked(ns.DB.matchAlerts) end
+        ns.RefreshOptions()
         ns.Print("Partner match alerts " .. (ns.DB.matchAlerts and "enabled" or "disabled") .. ".")
     elseif msg == "sound test" then
-        ns.PlayAlertSound("ReadyCheck")
+        ns.PlayAlert("applicant")
         ns.Print("Playing test alert sound.")
         if RaidNotice_AddMessage and RaidWarningFrame then
             RaidNotice_AddMessage(RaidWarningFrame,
@@ -264,7 +424,7 @@ SlashCmdList["ARENALFG"] = function(msg)
         end
     elseif msg == "debug" then
         ns.DEBUG = not ns.DEBUG
-        ns.DB.debug = ns.DEBUG
+        ns.SV.debug = ns.DEBUG
         ns.Print("Debug " .. (ns.DEBUG and "on" or "off"))
     elseif msg == "me" then
         ns.Print("class=" .. tostring(ns.GetMyClass()) .. " spec=" .. tostring(ns.GetMySpec())
