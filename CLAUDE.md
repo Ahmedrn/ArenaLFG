@@ -44,7 +44,7 @@ Files are large (UI.lua 1390 lines, GlobalParser.lua 591). **Grep for the functi
 ## Releasing
 
 - Version lives in `ArenaLFG.toc` (`## Version` and the `X-GitHub-Project-Download` URL) and `README.md` install line (`ArenaLFG-vX.Y.Z.zip`); add notes under `## Unreleased` in `CHANGELOG.md` and move them under the new version heading on release.
-- Release zips (`ArenaLFG-v*.zip`) and `ArenaLFG.warperia` are gitignored; the zip must contain a top-level `ArenaLFG/` folder with the `.toc` directly inside. Don't read or glob the zips (large binaries); `docs/` only holds screenshots.
+- Release zips (`ArenaLFG-v*.zip`) and `ArenaLFG.warperia` are gitignored; the zip must contain a top-level `ArenaLFG/` folder with the `.toc` directly inside. Leave `docs/` (screenshots) and `CLAUDE.md` out of the zip: they are not needed in game. Don't read or glob the zips (large binaries).
 - Commit style: short imperative subject lines (e.g. "Add options page with profiles, alert sound choices and version display").
 
 ## Project rules
