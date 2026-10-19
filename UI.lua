@@ -762,9 +762,6 @@ local function BuildGroupView(parent, f)
     w.delist = MakeButton(g, "Delist My Group", 112, 24)
     w.delist:SetPoint("BOTTOMLEFT", 8, 10)
     w.delist:SetScript("OnClick", function() ns.RemoveMine() end)
-    w.share = MakeButton(g, "Share", 64, 24)
-    w.share:SetPoint("LEFT", w.delist, "RIGHT", 6, 0)
-    w.share:SetScript("OnClick", function(self) ns.OpenShareMenu(self) end)
     w.edit = MakeButton(g, "Edit", 64, 24)
     w.edit:SetPoint("BOTTOMRIGHT", -8, 10)
     w.edit:SetScript("OnClick", function() ns.EditMine() end)
@@ -948,12 +945,6 @@ local function BuildFormView(parent, f)
     w.back:SetPoint("LEFT", w.post, "RIGHT", 6, 0)
     w.back:SetScript("OnClick", function() ns.SaveMine(); f.editing = false; UpdateLeft() end)
 
-    w.hint = p:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-    w.hint:SetPoint("TOPLEFT", 12, -384)
-    w.hint:SetWidth(268); w.hint:SetHeight(32)
-    w.hint:SetJustifyH("LEFT"); w.hint:SetJustifyV("TOP")
-    w.hint:SetText("Your role, gearscore and team are also what group leaders see when you sign up.")
-
     return p
 end
 
@@ -990,7 +981,7 @@ function ns.UI_LoadMine()
     w.detect:SetText((info.team and "|cff00ff00" or "|cff999999") .. txt .. "|r")
 
     w.post:SetText(m.posted and "Update Listing" or "List Group")
-    if m.posted then w.back:Show(); w.hint:Hide() else w.back:Hide(); w.hint:Show() end
+    if m.posted then w.back:Show() else w.back:Hide() end
 end
 
 function ns.SaveMine()
@@ -1110,37 +1101,9 @@ function ns.BuildUI()
     f.right = right
 
     MakeLabel(right, "Arena 2v2 groups", 12, -12)
-    f.pvpCheck = MakeCheck(f, "Open with PvP window", function(enabled)
-        ns.SetPVPIntegration(enabled)
-    end)
-    f.pvpCheck:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 24, 16)
-    f.pvpCheck:SetChecked(ns.DB.pvpIntegration)
-
-    f.soundCheck = MakeCheck(f, "Sound alerts", function(enabled)
-        ns.DB.soundAlerts = enabled
-    end)
-    f.soundCheck:SetPoint("LEFT", f.pvpCheck, "RIGHT", 130, 0)
-    f.soundCheck:SetChecked(ns.DB.soundAlerts)
-    f.soundCheck:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
-        GameTooltip:AddLine("Sound Alerts", 1, 0.82, 0)
-        GameTooltip:AddLine("Play audio alerts when someone signs up for your group or invites you.", 0.8, 0.8, 0.8, true)
-        GameTooltip:Show()
-    end)
-    f.soundCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
-
-    f.matchCheck = MakeCheck(f, "Match alerts", function(enabled)
-        ns.DB.matchAlerts = enabled
-    end)
-    f.matchCheck:SetPoint("LEFT", f.soundCheck, "RIGHT", 75, 0)
-    f.matchCheck:SetChecked(ns.DB.matchAlerts)
-    f.matchCheck:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
-        GameTooltip:AddLine("Partner Match Alerts", 1, 0.82, 0)
-        GameTooltip:AddLine("Notify on screen and in chat when a Global chat ad or ArenaLFG group is looking for your exact spec.", 0.8, 0.8, 0.8, true)
-        GameTooltip:Show()
-    end)
-    f.matchCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    local share = MakeButton(f, "Share ArenaLFG", 110, 20)
+    share:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 24, 18)
+    share:SetScript("OnClick", function(self) ns.OpenShareMenu(self) end)
 
     local options = MakeButton(f, "Options", 70, 20)
     options:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -24, 18)

@@ -135,6 +135,19 @@ function ns.Comm_Join()
     TryJoin(1)
 end
 
+-- Global is a normal, visible channel: join it only if the server has not already
+-- put the player in it (never hidden or removed from chat windows).
+function ns.Comm_EnsureGlobal(attempt)
+    attempt = attempt or 1
+    local name = ns.DB and ns.DB.globalChannel or "Global"
+    if (tonumber((GetChannelName(name))) or 0) > 0 then return end
+    JoinChannelByName(name)
+    ChatFrame_AddChannel(DEFAULT_CHAT_FRAME, name)
+    if attempt < JOIN_MAX_ATTEMPTS then
+        ns.After(JOIN_RETRY_DELAY, function() ns.Comm_EnsureGlobal(attempt + 1) end)
+    end
+end
+
 function ns.Broadcast()
     local l = ns.MyListing()
     if not l then return end

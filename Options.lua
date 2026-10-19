@@ -179,33 +179,9 @@ local function BuildMainPanel()
 
     -- Global chat
     Header(p, "Global chat", -306)
-    Label(p, "Chat channel to read ads from and announce in:", 20, -330)
-    local channel = CreateFrame("EditBox", NextName("Edit"), p, "InputBoxTemplate")
-    channel:SetWidth(140); channel:SetHeight(20); channel:SetAutoFocus(false)
-    channel:SetMaxLetters(32)
-    channel:SetPoint("TOPLEFT", 330, -326)
-    local function SaveChannel(self)
-        local name = strtrim(self:GetText() or "")
-        if name ~= "" and not name:find("|", 1, true) then
-            ns.DB.globalChannel = name
-        end
-        self:SetText(ns.DB.globalChannel)
-        self:ClearFocus()
-        ns.Changed()
-    end
-    channel:SetScript("OnEnterPressed", SaveChannel)
-    channel:SetScript("OnEditFocusLost", SaveChannel)
-    channel:SetScript("OnEscapePressed", function(self)
-        self:SetText(ns.DB.globalChannel)
-        self:ClearFocus()
-    end)
-    refreshers[#refreshers + 1] = function()
-        if not channel:HasFocus() then channel:SetText(ns.DB.globalChannel or "") end
-    end
-
     Check(p, "Announce my listed group in Global chat",
         "Post a short ad for your group under your name while it is listed. Server chat rules apply.",
-        16, -354,
+        16, -330,
         function() return ns.DB.announce end,
         function(v)
             if (ns.DB.announce and true or false) ~= v then ns.SetAnnounceEnabled(v) end
@@ -214,7 +190,7 @@ local function BuildMainPanel()
     local sliderName = NextName("Slider")
     local slider = CreateFrame("Slider", sliderName, p, "OptionsSliderTemplate")
     slider:SetWidth(260)
-    slider:SetPoint("TOPLEFT", 24, -406)
+    slider:SetPoint("TOPLEFT", 24, -382)
     slider:SetMinMaxValues(ns.ANNOUNCE_MIN_INTERVAL, ns.ANNOUNCE_MAX_INTERVAL)
     slider:SetValueStep(1)
     _G[sliderName .. "Low"]:SetText(ns.ANNOUNCE_MIN_INTERVAL .. " min")

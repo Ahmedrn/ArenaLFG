@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Share ArenaLFG works without a listing: the Share button moved to the bottom of the main window; PvP integration and alert toggles are now only in the options page.
+- Join the Global channel automatically at login if you are not already in it (visible, unlike the hidden sync channel).
+- Remove the Global channel name setting from the options page.
 - Add an options page under Interface > AddOns > ArenaLFG (also `/alfg options` or right-click the minimap button) with all settings, Global announcement on/off and frequency (2-30 minutes), and alert sound choices.
 - Add profiles (switch, create, copy, delete, reset) shared across characters; existing settings move to the "Default" profile.
 - Use a group-invite chime for sign-ups and a softer, separate sound for partner match alerts; both can be changed in the options.

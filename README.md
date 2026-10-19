@@ -19,7 +19,7 @@
 - **Preferred partner specs:** choose a role, then select one or more specs or choose **Any spec** (for example, Healer → Holy Paladin and Restoration Druid, or any Healer); their icons or role preference appear in the displayed group title.
 - **Auto-detection**: your class, race, spec, 2v2 team and team rating are read from the game. When a GearScore addon exposes `GearScore_GetScore`, ArenaLFG reads your gearscore through that API; otherwise, the gearscore you enter is self-reported.
 - **Roles:** DPS, Healer, Tank. Your role is automatically detected from your class and primary talent tree and shown in your listing.
-- **PvP UI integration:** enabled by default; ArenaLFG opens beside the PvP window when you open it (H is the default WoW PvP keybinding). Use the main-window checkbox or `/alfg pvp` to toggle the integration. The minimap button and `/alfg` always open ArenaLFG manually.
+- **PvP UI integration:** enabled by default; ArenaLFG opens beside the PvP window when you open it (H is the default WoW PvP keybinding). Use the options page or `/alfg pvp` to toggle the integration. The minimap button and `/alfg` always open ArenaLFG manually.
 - **Topmost window:** ArenaLFG uses the `DIALOG` frame strata and raises itself when opened to stay above most game windows.
 - **Clean chat:** ArenaLFG sync traffic is filtered from your regular chat windows.
 
@@ -62,7 +62,7 @@ When you sign up to someone's group, the leader receives your role, spec, gearsc
 | `/alfg options` | Open the options page |
 | `/alfg version` | Show the installed ArenaLFG version |
 | `/alfg minimap` | Show or hide the minimap button |
-| `/alfg pvp` | Toggle PvP window integration (enabled by default; also controlled by the main-window checkbox) |
+| `/alfg pvp` | Toggle PvP window integration (enabled by default; also controlled in the options page) |
 | `/alfg me` | Print what the addon detects about your character (class, spec, GS, arena teams) |
 | `/alfg comm` | Check ArenaLFG connection status and retry if needed |
 | `/alfg clear` | Clear the local list |

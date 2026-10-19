@@ -325,6 +325,7 @@ ev:SetScript("OnEvent", function(self, event, arg1)
     elseif event == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         ns.After(5, ns.Comm_Join) -- channels are not ready right at login
+        ns.After(8, function() ns.Comm_EnsureGlobal() end) -- after the server's own auto-join
         ns.After(8, ns.RequestArenaData)
         ns.After(5, function()
             if ns.DB and not ns.SV.announceAsked and ShowAnnouncePrompt() then
