@@ -51,4 +51,3 @@ Files are large (UI.lua 1390 lines, GlobalParser.lua 591). **Grep for the functi
 
 - **README.md** is copy-pasted into the Warperia app on every release so users can update easily: keep it current but concise (no exhaustive detail). Update it whenever user-facing behavior changes.
 - **Commits:** always author as `Ahmed Snoussi <ahmed_sn@icloud.com>` (already the repo's git config); commit and push when asked.
-- `Debug.lua` (`/alfg fake`, `/alfg fake clear`) is temporary test data: delete the file and its `.toc` line before building a release zip.

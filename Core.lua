@@ -469,8 +469,6 @@ SlashCmdList["ARENALFG"] = function(msg)
         ns.HidePlayer(strtrim(rawMsg:match("^%S+%s+(.+)$") or ""), true)
     elseif msg:match("^unhide%s+") then
         ns.HidePlayer(strtrim(rawMsg:match("^%S+%s+(.+)$") or ""), false)
-    elseif msg == "fake" or msg:match("^fake%s") then
-        if ns.FakeData then ns.FakeData(msg) end
     elseif msg == "clear" then
         wipe(ns.listings)
         ns.Changed()

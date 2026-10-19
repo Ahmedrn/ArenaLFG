@@ -194,10 +194,6 @@ local function RebuildSocial()
             if name then ns.guildies[name] = true end
         end
     end
-    if ns.fakeSocial then -- test data from /alfg fake
-        for name in pairs(ns.fakeSocial.friends) do ns.friends[name] = true end
-        for name in pairs(ns.fakeSocial.guildies) do ns.guildies[name] = true end
-    end
     ns.Changed()
 end
 local socialFrame = CreateFrame("Frame")
@@ -286,14 +282,14 @@ end
 ns.Every(5, function()
     local now, removed = GetTime(), false
     for name, l in pairs(ns.listings) do
-        if not l.fake and (now - l.seen) > (l.source == "global" and 120 or ns.EXPIRE) then
+        if (now - l.seen) > (l.source == "global" and 120 or ns.EXPIRE) then
             ns.listings[name] = nil
             ns.applied[name] = nil
             removed = true
         end
     end
     for name, l in pairs(ns.applicants) do
-        if l.received and not l.fake and (now - l.received) > ns.EXPIRE then
+        if l.received and (now - l.received) > ns.EXPIRE then
             ns.applicants[name] = nil
             removed = true
         end
