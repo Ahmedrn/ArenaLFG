@@ -591,7 +591,7 @@ function ns.OpenShareMenu(anchor)
 
     if not (isArena or inParty) and not lastTell and not (targetName and targetName ~= UnitName("player")) then
         if channelId > 0 then
-            ChatFrame_OpenChat("/" .. channelId .. " Know an arena partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+            ChatFrame_OpenChat("/" .. channelId .. " Tired of spamming Global for a partner? ArenaLFG lists 2v2, 3v3 and DuoQ groups, sign up in one click: https://warperia.com/addon-wotlk/arenalfg/")
         else
             ns.Print("Join your configured Global channel before sharing ArenaLFG.")
         end
@@ -608,7 +608,7 @@ function ns.OpenShareMenu(anchor)
             text = label,
             notCheckable = true,
             func = function()
-                ChatFrame_OpenChat("/p Looking for an arena partner? Get the ArenaLFG addon: https://warperia.com/addon-wotlk/arenalfg/")
+                ChatFrame_OpenChat("/p Need an arena partner? Get ArenaLFG: browse 2v2, 3v3 and DuoQ groups and sign up in one click: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end
@@ -618,7 +618,7 @@ function ns.OpenShareMenu(anchor)
             text = "Global (" .. channelName .. ")",
             notCheckable = true,
             func = function()
-                ChatFrame_OpenChat("/" .. channelId .. " Know an arena partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+                ChatFrame_OpenChat("/" .. channelId .. " Tired of spamming Global for a partner? ArenaLFG lists 2v2, 3v3 and DuoQ groups, sign up in one click: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end
@@ -628,7 +628,7 @@ function ns.OpenShareMenu(anchor)
             text = "Whisper " .. targetName,
             notCheckable = true,
             func = function()
-                ChatFrame_OpenChat("/w " .. targetName .. " Know an arena partner? Check out ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+                ChatFrame_OpenChat("/w " .. targetName .. " Hey! Need an arena partner? Try ArenaLFG, it lists 2v2, 3v3 and DuoQ groups and you sign up in one click: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end
@@ -638,7 +638,7 @@ function ns.OpenShareMenu(anchor)
             text = "Reply to " .. lastTell,
             notCheckable = true,
             func = function()
-                ChatFrame_OpenChat("/w " .. lastTell .. " Thanks for your interest! ArenaLFG helps you find arena partners: https://warperia.com/addon-wotlk/arenalfg/")
+                ChatFrame_OpenChat("/w " .. lastTell .. " Thanks for your interest! ArenaLFG lists 2v2, 3v3 and DuoQ groups so you can find a partner in one click: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end
