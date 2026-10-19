@@ -492,9 +492,6 @@ local function RefreshList()
             row.title:SetText(FactionRaceMarkup(l.race) .. namePart .. "  |cffffffff" .. listingTitle .. "|r")
 
             local parts = {}
-            if ns.WantsMe(l) then
-                parts[#parts + 1] = "|cff55ff55Wants you|r"
-            end
             if l.teamKnown == false then
                 parts[#parts + 1] = "|cff888888Team ?|r"
             elseif l.hasTeam and l.teamRating > 0 then

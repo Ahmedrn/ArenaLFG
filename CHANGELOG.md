@@ -2,7 +2,7 @@
 
 ## 2.0.0
 
-- Tint listings red (declined you), blue (friends) and green (guildmates); mark listings that look for your spec with "Wants you" and add a *Looking for my spec* filter.
+- Tint listings red (declined you), blue (friends) and green (guildmates); add a *Looking for my spec* filter.
 - Hide players from the row's right-click menu (`/alfg hide`, `/alfg unhide`, `/alfg hidden`); their listings and sign-ups are ignored.
 - Remember the window position.
 - Tell you once when another ArenaLFG user runs a newer version.
