@@ -371,6 +371,7 @@ ev:SetScript("OnEvent", function(self, event, arg1)
             ns.mine.postedAt = nil
         end
         ns.mine.roleManual = nil
+        ns.mine.afkDelisted, ns.mine.afkBracket = nil, nil -- AFK delisting never survives a reload
         ns.DEBUG = ns.SV.debug
         local okRole = false
         for _, r in ipairs(ns.ROLES) do if r == ns.mine.role then okRole = true end end
@@ -588,6 +589,29 @@ local function CheckGroup()
     end
 end
 gf:SetScript("OnEvent", CheckGroup)
+
+-- AFK: a listing is removed while the player is away (the game flags AFK after a few idle
+-- minutes, or with /afk) and put back when they return.
+local afkFrame = CreateFrame("Frame")
+afkFrame:RegisterEvent("PLAYER_FLAGS_CHANGED")
+afkFrame:SetScript("OnEvent", function(self, event, unit)
+    if unit ~= "player" or not ns.DB then return end
+    local m = ns.mine
+    if UnitIsAFK("player") then
+        if m.posted and not (ns.InPvpInstance() or ns.PvpPending()) then
+            m.afkDelisted, m.afkBracket = true, m.bracket
+            ns.Print("You are AFK, your listing was removed. It will be restored when you are back.")
+            ns.RemoveMine()
+        end
+    elseif m.afkDelisted then
+        local bracket = m.afkBracket
+        m.afkDelisted, m.afkBracket = nil, nil
+        if m.posted or ns.GroupBlocksListing() then return end
+        ns.SetMineBracket(bracket)
+        ns.PostMine()
+        if m.posted then ns.Print("Welcome back, your listing was restored.") end
+    end
+end)
 
 -- Quick reload while developing: /rl
 SLASH_ARENALFGRL1 = "/rl"
