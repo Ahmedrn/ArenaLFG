@@ -1186,6 +1186,8 @@ end
 
 function ns.EditMine()
     if not ns.frame then return end
+    -- jump to the tab of the listing being edited
+    if ns.mine.posted and ns.viewBracket ~= ns.mine.bracket then ns.SetViewBracket(ns.mine.bracket) end
     ns.frame.editing = true
     ns.frame:Show()
     UpdateLeft()
