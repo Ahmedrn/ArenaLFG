@@ -102,6 +102,7 @@ local profileDefaults = {
     pvpIntegration = true,
     soundAlerts = true,
     matchAlerts = true,
+    autoReply = true, -- whisper back while listed and inside an arena match
     applicantSound = "igPlayerInvite",
     matchSound = "MapPing",
     minimap = { angle = 200, hide = false },

@@ -586,8 +586,10 @@ function ns.OpenShareMenu(anchor)
     local channelName = ns.DB and ns.DB.globalChannel or "Global"
     local channelId = tonumber((GetChannelName(channelName))) or 0
     local targetName = UnitIsPlayer("target") and UnitName("target")
+    local lastTell = ChatEdit_GetLastTellTarget and ChatEdit_GetLastTellTarget()
+    if lastTell == "" or lastTell == UnitName("player") then lastTell = nil end
 
-    if not (isArena or inParty) and not (targetName and targetName ~= UnitName("player")) then
+    if not (isArena or inParty) and not lastTell and not (targetName and targetName ~= UnitName("player")) then
         if channelId > 0 then
             ChatFrame_OpenChat("/" .. channelId .. " Know an arena partner? Tell them about ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
         else
@@ -627,6 +629,16 @@ function ns.OpenShareMenu(anchor)
             notCheckable = true,
             func = function()
                 ChatFrame_OpenChat("/w " .. targetName .. " Know an arena partner? Check out ArenaLFG: https://warperia.com/addon-wotlk/arenalfg/")
+            end,
+        })
+    end
+
+    if lastTell then
+        tinsert(menu, {
+            text = "Reply to " .. lastTell,
+            notCheckable = true,
+            func = function()
+                ChatFrame_OpenChat("/w " .. lastTell .. " Thanks for your interest! ArenaLFG helps you find arena partners: https://warperia.com/addon-wotlk/arenalfg/")
             end,
         })
     end

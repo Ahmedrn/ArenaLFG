@@ -12,6 +12,7 @@
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
 - **Chat ad import:** clear 2v2 partner ads can appear as temporary listings. Parsed details may be incomplete or inaccurate. The selected-ad button opens a whisper; use the row's right-click menu to invite.
 - **Optional Global announcement:** opt in to share your listed group in Global. Posts are public and subject to server chat rules; toggle announcements and set how often they post (every 2 to 30 minutes) in the options, or use `/alfg announce on` / `/alfg announce off`.
+- **Auto-reply:** while your group is listed and you are in an arena match (SoloQ), whispers and party invites get a short "busy" answer once. Can be turned off in the options.
 - **Share ArenaLFG:** prefill a Global chat invitation from the Share button, then review and send it yourself.
 - **Sign Up flow** like retail: pick a group, press *Sign Up*, the leader sees you in their applicants list and can *Invite* or decline.
 - **Alerts:** sign-ups and invites are announced on screen and in chat with a sound, and partner match alerts (a group or Global ad looking for your spec) use a softer sound. Both sounds can be changed in the options.

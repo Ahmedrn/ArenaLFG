@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Auto-reply to whispers and party invites while your group is listed and you are in an arena match (SoloQ); option in the options page.
+- Add a "Reply to <player>" entry to the Share menu to answer whoever whispered you last about the addon.
 - Keep your listing when a SoloQ or battleground match is found, not only once inside the instance.
 - 3v3 listings: choose a comp and whether you are alone or with a partner instead of picking one role; announcements and listings show the specs still needed (for example `Awar LF Ele+Hpal 3v3`).
 - Your listing is no longer removed when you queue for or enter a battleground or arena (including SoloQ); a 3v3 listing also stays up in a party of two.

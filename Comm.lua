@@ -292,6 +292,39 @@ ns.Every(ns.HEARTBEAT, function()
     end
 end)
 
+-- Auto-reply: while listed and inside an arena match (SoloQ), tell whoever whispers or
+-- invites that you are busy, so they know to wait (once per player every 5 minutes).
+local AUTO_REPLY_TAG = "[ArenaLFG]"
+local AUTO_REPLY = AUTO_REPLY_TAG .. " Auto-reply: I'm in a SoloQ arena match right now, I'll answer when it ends."
+local autoReplied = {}
+
+local function ShouldAutoReply()
+    if not (ns.DB and ns.DB.autoReply and ns.mine and ns.mine.posted) then return false end
+    local inInstance, instanceType = IsInInstance()
+    return inInstance and instanceType == "arena"
+end
+
+local function AutoReply(name)
+    if type(name) ~= "string" or name == "" or name == UnitName("player") then return end
+    local now = GetTime()
+    if autoReplied[name] and now - autoReplied[name] < 300 then return end
+    autoReplied[name] = now
+    pcall(SendChatMessage, AUTO_REPLY, "WHISPER", nil, name)
+end
+
+local replyFrame = CreateFrame("Frame")
+replyFrame:RegisterEvent("CHAT_MSG_WHISPER")
+replyFrame:RegisterEvent("PARTY_INVITE_REQUEST")
+replyFrame:SetScript("OnEvent", function(self, event, arg1, arg2)
+    if not ShouldAutoReply() then return end
+    if event == "CHAT_MSG_WHISPER" then
+        if strsub(arg1 or "", 1, #AUTO_REPLY_TAG) == AUTO_REPLY_TAG then return end -- never answer an auto-reply
+        AutoReply(arg2)
+    else
+        AutoReply(arg1) -- inviter
+    end
+end)
+
 local function QueueRequestResponse()
     if requestResponsePending or not (ns.DB and ns.mine.posted) then return end
 

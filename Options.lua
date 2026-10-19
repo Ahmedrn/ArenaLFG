@@ -139,8 +139,12 @@ local function BuildMainPanel()
         16, -110,
         function() return ns.DB.pvpIntegration end,
         function(v) ns.SetPVPIntegration(v) end)
-    Check(p, "Debug messages", "Print sync and chat parsing details in chat. Applies to all profiles.",
+    Check(p, "Auto-reply in SoloQ", "While your group is listed and you are inside an arena match, answer whispers and party invites with a short busy message.",
         16, -136,
+        function() return ns.DB.autoReply end,
+        function(v) ns.DB.autoReply = v end)
+    Check(p, "Debug messages", "Print sync and chat parsing details in chat. Applies to all profiles.",
+        220, -136,
         function() return ns.SV.debug end,
         function(v) ns.DEBUG = v; ns.SV.debug = v end)
 
