@@ -203,16 +203,19 @@ function ns.GetMyGearScore()
     return nil
 end
 
--- Returns teamName, rating for the player's 2v2 team (nil if none)
-function ns.GetMy2v2Team()
+-- Returns teamName, rating for the player's arena team of the bracket's size (nil if none)
+function ns.GetMyTeam(bracket)
+    local wanted = ns.BRACKET_TEAM_SIZE[ns.NormalizeBracket(bracket)]
     for i = 1, (MAX_ARENA_TEAMS or 3) do
         local name, size, rating = GetArenaTeam(i)
-        if name and size == 2 then
+        if name and size == wanted then
             return name, rating
         end
     end
     return nil
 end
+
+function ns.GetMy2v2Team() return ns.GetMyTeam("2v2") end
 
 -- Ask the server for arena team data (it is not always loaded at login)
 function ns.RequestArenaData()
@@ -242,13 +245,13 @@ f:SetScript("OnEvent", function()
     end
 end)
 
--- Pull what the game can tell us. The 2v2 team is authoritative: no team = no team.
+-- Pull what the game can tell us. The team of the selected bracket is authoritative: no team = no team.
 function ns.DetectMine()
     local m, info = ns.mine, {}
     m.role = ns.GetSuggestedRole() or "DPS"
     local gs = ns.GetMyGearScore()
     if gs then m.gs = gs; info.gs = true end
-    local tname, rating = ns.GetMy2v2Team()
+    local tname, rating = ns.GetMyTeam(m.bracket)
     m.hasTeam = tname and true or false
     m.teamRating = tname and (rating or 0) or 0
     info.team = tname

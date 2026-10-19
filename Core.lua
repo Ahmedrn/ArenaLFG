@@ -12,6 +12,17 @@ ns.applied   = {}             -- [leaderName] = "pending" | "invited" | "decline
 ns.applicants = {}            -- [playerName] = listing table (people who signed up to MY group)
 
 ns.ROLES = { "DPS", "Healer", "Tank" }
+ns.BRACKETS = { "2v2", "3v3", "DuoQ" }
+ns.DEFAULT_BRACKET = "2v2"
+-- arena team size that carries the rating for each bracket (DuoQ uses the "Solo Queue" team)
+ns.BRACKET_TEAM_SIZE = { ["2v2"] = 2, ["3v3"] = 3, ["DuoQ"] = 5 }
+
+function ns.NormalizeBracket(bracket)
+    for _, b in ipairs(ns.BRACKETS) do
+        if b == bracket then return b end
+    end
+    return ns.DEFAULT_BRACKET
+end
 ns.TIERS = { "New to arena", "Casual (< 1500)", "1500+", "1800+", "2000+", "2200+", "2400+" }
 
 ----------------------------------------------------------------------
@@ -83,7 +94,7 @@ ns.ANNOUNCE_MIN_INTERVAL = 2
 ns.ANNOUNCE_MAX_INTERVAL = 30
 
 local mineDefaults = {
-    role = "DPS", gs = 0,
+    role = "DPS", gs = 0, bracket = "2v2",
     hasTeam = false, teamRating = 0,
     tier = 1, seasonal = false, tenGames = false,
     note = "", targetRole = "Any", targetAny = false, targetSpecs = {}, posted = false,
@@ -320,6 +331,7 @@ ev:SetScript("OnEvent", function(self, event, arg1)
         local okRole = false
         for _, r in ipairs(ns.ROLES) do if r == ns.mine.role then okRole = true end end
         if not okRole then ns.mine.role = "DPS" end
+        ns.mine.bracket = ns.NormalizeBracket(ns.mine.bracket)
         ns.BuildMinimapButton()
         if ns.BuildOptions then ns.BuildOptions() end
     elseif event == "PLAYER_ENTERING_WORLD" then

@@ -54,6 +54,7 @@ function ns.Encode(l)
         b(l.hasTeam), l.teamRating or 0, l.tier or 1,
         b(l.seasonal), b(l.tenGames), clean(l.note),
         l.targetRole or "Any", EncodeTargetSpecs(l), clean(l.specId), clean(l.race),
+        ns.NormalizeBracket(l.bracket),
     }, SEP)
 end
 
@@ -95,6 +96,7 @@ function ns.Decode(msg, sender)
         targetSpecs = targetSpecs,
         specId = ns.IsValidSpecId(parts[2], parts[14]) and parts[14] or nil,
         race = ns.NormalizeRace(parts[15]),
+        bracket = ns.NormalizeBracket(parts[16]), -- missing from older clients = 2v2
     }
 end
 
@@ -176,6 +178,7 @@ function ns.BuildMine()
         targetRole = m.targetRole, targetAny = m.targetAny, targetSpecs = m.targetSpecs,
         specId = ns.GetMySpecId(),
         race = ns.GetMyRace(),
+        bracket = m.bracket,
     }
 end
 
@@ -210,7 +213,7 @@ end)
 function ns.GetSorted()
     local f, out = ns.DB.filters, {}
     for _, l in pairs(ns.listings) do
-        local ok = true
+        local ok = (l.bracket or ns.DEFAULT_BRACKET) == (ns.viewBracket or ns.DEFAULT_BRACKET)
         if f.role ~= "Any" and l.role ~= f.role then ok = false end
         if f.team == "Has team" and l.teamKnown ~= false and not l.hasTeam then ok = false end
         if f.team == "No team" and l.teamKnown ~= false and l.hasTeam then ok = false end

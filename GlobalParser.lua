@@ -564,6 +564,7 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
         targetRole = targetRole,
         targetAny = targetRole ~= "Any" and not hasTargetSpecs,
         targetSpecs = targetSpecs or {},
+        bracket = "2v2",
         source = "global",
         chatText = message,
     })
