@@ -192,6 +192,10 @@ local function RebuildSocial()
             if name then ns.guildies[name] = true end
         end
     end
+    if ns.fakeSocial then -- test data from /alfg fake
+        for name in pairs(ns.fakeSocial.friends) do ns.friends[name] = true end
+        for name in pairs(ns.fakeSocial.guildies) do ns.guildies[name] = true end
+    end
     ns.Changed()
 end
 local socialFrame = CreateFrame("Frame")
@@ -241,6 +245,17 @@ function ns.RemoveListing(name)
     ns.Changed()
 end
 
+-- What /alfg-style applications say about me: "Arms Warrior 5659 GS - Exp: 2200+"
+function ns.ApplicationText()
+    local m = ns.BuildMine()
+    local spec = ns.GetMySpec()
+    local text = (spec ~= "None" and (spec .. " ") or "") .. (UnitClass("player") or "")
+    if m.gs and m.gs > 0 then text = text .. " " .. m.gs .. " GS" end
+    local tier = ns.TIERS[m.tier]
+    if tier then text = text .. " - Exp: " .. tier end
+    return text
+end
+
 -- Your own data as a listing table (also used when you sign up to someone else's group)
 function ns.BuildMine()
     local m = ns.mine
@@ -269,14 +284,14 @@ end
 ns.Every(5, function()
     local now, removed = GetTime(), false
     for name, l in pairs(ns.listings) do
-        if (now - l.seen) > (l.source == "global" and 120 or ns.EXPIRE) then
+        if not l.fake and (now - l.seen) > (l.source == "global" and 120 or ns.EXPIRE) then
             ns.listings[name] = nil
             ns.applied[name] = nil
             removed = true
         end
     end
     for name, l in pairs(ns.applicants) do
-        if l.received and (now - l.received) > ns.EXPIRE then
+        if l.received and not l.fake and (now - l.received) > ns.EXPIRE then
             ns.applicants[name] = nil
             removed = true
         end

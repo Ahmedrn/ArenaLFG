@@ -8,6 +8,7 @@ local FACTION_COORDS = {
     Horde = { 0, 0.6, 0, 0.6 },
 }
 local APP_H, APP_ROWS = 26, 8
+local appSort = { key = "order", desc = false } -- applicant list order (column headers change it)
 local CLASS_TEX = "Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes"
 local menuFrame = CreateFrame("Frame", "ArenaLFGMenuFrame", UIParent, "UIDropDownMenuTemplate")
 local UpdateLeft -- forward declaration
@@ -306,6 +307,24 @@ local function ShowTooltip(row)
     GameTooltip:Show()
 end
 
+local function AppValue(l, key)
+    if key == "name" then return strlower(l.name) end
+    if key == "role" then return l.role or "" end
+    if key == "rating" then return (l.hasTeam and l.teamRating) or 0 end
+    if key == "gs" then return l.gs or 0 end
+    return l.order or 0
+end
+
+function ns.SortApplicants(key)
+    if appSort.key == key then
+        appSort.desc = not appSort.desc
+    else
+        appSort.key = key
+        appSort.desc = (key == "rating" or key == "gs") -- best first
+    end
+    ns.RefreshAll()
+end
+
 local function RowClick(row, button)
     local l = row.data
     if not l then return end
@@ -325,6 +344,9 @@ local function RowClick(row, button)
         EasyMenu({
             { text = l.name, isTitle = true, notCheckable = true },
             { text = "Whisper", notCheckable = true, func = function() ChatFrame_SendTell(l.name) end },
+            { text = "Send application", notCheckable = true, func = function()
+                ChatFrame_OpenChat("/w " .. l.name .. " " .. ns.ApplicationText())
+            end },
             { text = "Invite to group", notCheckable = true, func = function() InviteUnit(l.name) end },
             { text = "Hide this player", notCheckable = true, func = function() ns.HidePlayer(l.name, true) end },
             { text = "Cancel", notCheckable = true },
@@ -747,11 +769,24 @@ local function BuildGroupView(parent, f)
     w.announceStatus:SetJustifyH("LEFT")
 
     -- column headers
-    local function Col(text, x)
-        local fs = g:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-        fs:SetPoint("TOPLEFT", x, -108); fs:SetText(text)
+    w.cols = {}
+    local function Col(text, x, width, key)
+        local b = CreateFrame("Button", nil, g)
+        b:SetPoint("TOPLEFT", x, -106); b:SetWidth(width); b:SetHeight(14)
+        b.fs = b:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+        b.fs:SetAllPoints(); b.fs:SetJustifyH("LEFT"); b.fs:SetText(text)
+        b.label = text
+        b:SetScript("OnClick", function() ns.SortApplicants(key) end)
+        b:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:AddLine("Click to sort", 0.8, 0.8, 0.8)
+            GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        w.cols[key] = b
     end
-    Col("Applicant", 12); Col("Role", 112); Col("GS", 160)
+    Col("Applicant", 12, 76, "name"); Col("Role", 90, 20, "role")
+    Col("Rating", 112, 40, "rating"); Col("GS", 154, 40, "gs")
 
     w.rows = {}
     for i = 1, APP_ROWS do
@@ -774,14 +809,14 @@ local function BuildGroupView(parent, f)
             fs:SetJustifyH("LEFT")
             return fs
         end
-        r.name = FS(26, 72)
+        r.name = FS(26, 64)
 
         r.roleIcon = r:CreateTexture(nil, "ARTWORK")
         r.roleIcon:SetWidth(14); r.roleIcon:SetHeight(14)
-        r.roleIcon:SetPoint("LEFT", 100, 0)
+        r.roleIcon:SetPoint("LEFT", 92, 0)
 
-        r.role = FS(116, 40)
-        r.gs   = FS(160, 36)
+        r.rating = FS(112, 40)
+        r.gs   = FS(154, 40)
         r.invite = MakeButton(r, "Invite", 44, 20)
         r.invite:SetPoint("LEFT", 198, 0)
         r.invite:SetText("|cff55ff55Invite|r")
@@ -867,7 +902,17 @@ local function RefreshGroupView()
 
     local list = {}
     for _, l in pairs(ns.applicants) do list[#list + 1] = l end
-    table.sort(list, function(a, b) return (a.order or 0) < (b.order or 0) end)
+    table.sort(list, function(a, b)
+        local x, y = AppValue(a, appSort.key), AppValue(b, appSort.key)
+        if x ~= y then
+            if appSort.desc then return x > y end
+            return x < y
+        end
+        return (a.order or 0) < (b.order or 0)
+    end)
+    for key, b in pairs(w.cols) do
+        b.fs:SetText(b.label .. (appSort.key == key and (appSort.desc and " v" or " ^") or ""))
+    end
     for i = 1, APP_ROWS do
         local r, l = w.rows[i], list[i]
         if l then
@@ -878,7 +923,8 @@ local function RefreshGroupView()
             r.name:SetTextColor(c.r, c.g, c.b)
             SetListingSpecIcon(r.specIcon, l)
             SetRoleIcon(r.roleIcon, l.role)
-            r.role:SetText(RoleText(l.role))
+            local rating = l.hasTeam and l.teamRating or 0
+            r.rating:SetText(rating > 0 and ("|cffffd100" .. rating .. "|r") or "|cff777777-|r")
             r.gs:SetText(l.gs > 0 and ("|cff55ff55" .. l.gs .. "|r") or "|cff777777-|r")
             r:Show()
         else

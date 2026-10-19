@@ -2,6 +2,8 @@
 
 ## 2.0.0
 
+- Applicants list shows team rating and gearscore and sorts by name, role, rating or gearscore; *Send application* in a row's right-click menu prefills a whisper with your spec, class, gearscore and experience.
+- Remove the `/alfg global` command.
 - Tint listings red (declined you), blue (friends) and green (guildmates); add a *Looking for my spec* filter.
 - Hide players from the row's right-click menu (`/alfg hide`, `/alfg unhide`, `/alfg hidden`); their listings and sign-ups are ignored.
 - Remember the window position.

@@ -20,3 +20,4 @@ Comm.lua
 Minimap.lua
 UI.lua
 Options.lua
+Debug.lua
