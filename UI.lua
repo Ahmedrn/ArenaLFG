@@ -774,7 +774,7 @@ local function BuildGroupView(parent, f)
         local b = CreateFrame("Button", nil, g)
         b:SetPoint("TOPLEFT", x, -106); b:SetWidth(width); b:SetHeight(14)
         b.fs = b:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-        b.fs:SetAllPoints(); b.fs:SetJustifyH("LEFT"); b.fs:SetText(text)
+        b.fs:SetPoint("LEFT", b, "LEFT", 0, 0); b.fs:SetText(text) -- no fixed width: the sort arrow must not be cut off
         b.label = text
         b:SetScript("OnClick", function() ns.SortApplicants(key) end)
         b:SetScript("OnEnter", function(self)
@@ -785,8 +785,8 @@ local function BuildGroupView(parent, f)
         b:SetScript("OnLeave", function() GameTooltip:Hide() end)
         w.cols[key] = b
     end
-    Col("Applicant", 12, 76, "name"); Col("Role", 90, 20, "role")
-    Col("Rating", 112, 40, "rating"); Col("GS", 154, 40, "gs")
+    Col("Applicant", 12, 70, "name"); Col("Role", 84, 34, "role")
+    Col("Rating", 122, 44, "rating"); Col("GS", 168, 28, "gs")
 
     w.rows = {}
     for i = 1, APP_ROWS do
@@ -809,14 +809,14 @@ local function BuildGroupView(parent, f)
             fs:SetJustifyH("LEFT")
             return fs
         end
-        r.name = FS(26, 64)
+        r.name = FS(26, 58)
 
         r.roleIcon = r:CreateTexture(nil, "ARTWORK")
         r.roleIcon:SetWidth(14); r.roleIcon:SetHeight(14)
-        r.roleIcon:SetPoint("LEFT", 92, 0)
+        r.roleIcon:SetPoint("LEFT", 86, 0)
 
-        r.rating = FS(112, 40)
-        r.gs   = FS(154, 40)
+        r.rating = FS(122, 34)
+        r.gs   = FS(168, 28)
         r.invite = MakeButton(r, "Invite", 44, 20)
         r.invite:SetPoint("LEFT", 198, 0)
         r.invite:SetText("|cff55ff55Invite|r")
