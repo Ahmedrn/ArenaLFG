@@ -123,7 +123,6 @@ local profileDefaults = {
     globalChannel = "Global",
     announce = false,
     announceInterval = 2, -- minutes between Global announcements
-    announceMessage = "{auto} - {title}", -- Global announcement template; tags: {auto} {title} {bracket}
     pvpIntegration = true,
     soundAlerts = true,
     matchAlerts = true,

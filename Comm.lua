@@ -226,28 +226,14 @@ local function BuildAnnouncement()
     return owner .. " LF " .. lookingFor .. " " .. ns.BracketTag(listing.bracket) .. rating .. " (ArenaLFG)"
 end
 
--- Without a custom template the ad is the generated one plus the listing's group title.
--- A template may use {auto} (generated ad), {title} (group title) and {bracket} (2v2/3v3/duoq),
--- so it stays right when the listing's bracket changes. Chat messages are limited to 255 characters.
+-- The generated ad, followed by the listing's group title when one is set.
 local function AnnouncementText()
     local auto = BuildAnnouncement()
     if not auto then return nil end
     local listing = ns.MyListing()
     local title = listing and listing.note and strtrim(listing.note) or ""
-    local template = ns.DB and ns.DB.announceMessage
-    template = type(template) == "string" and strtrim(template) or ""
-    if template == "" then template = "{auto} - {title}" end -- same as the profile default
-
-    local values = { auto = auto, title = title, bracket = ns.BracketTag(listing.bracket) }
-    local text = template:gsub("{(%a+)}", function(key) return values[key] end)
-    text = text:gsub("^%s*%-%s*", ""):gsub("%s*%-%s*$", ""):gsub("%s%s+", " ")
-    return strsub(strtrim(text), 1, 255)
-end
-
-function ns.SetAnnounceMessage(text)
-    if not ns.DB then return end
-    ns.DB.announceMessage = strsub(strtrim(tostring(text or "")), 1, 255) -- empty = default template
-    ns.Changed()
+    if title ~= "" then auto = auto .. " - " .. title end
+    return strsub(auto, 1, 255)
 end
 
 function ns.TryAnnounceMine()

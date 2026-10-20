@@ -1100,7 +1100,7 @@ local function BuildFormView(parent, f)
     w.ten:SetPoint("TOPLEFT", 6, -262)
     Track(w.ten, 6, -262)
 
-    Track(MakeLabel(p, "Group title (optional)", 12, -298), 12, -298)
+    Track(MakeLabel(p, "Group title (optional, also in Global post)", 12, -298), 12, -298)
     w.note = MakeEdit(p, 256, false, 60)
     w.note:SetPoint("TOPLEFT", 16, -318)
     Track(w.note, 16, -318)

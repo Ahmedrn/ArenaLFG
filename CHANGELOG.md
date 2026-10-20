@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Customize the Global announcement text in the options (prefilled with `{auto} - {title}`; tags `{auto}`, `{title}`, `{bracket}`); the Global announcement now ends with your group title when you set one.
+- The Global announcement now ends with your group title when you set one.
 
 ## 2.0.0
 

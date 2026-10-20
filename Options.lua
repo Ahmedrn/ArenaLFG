@@ -219,28 +219,6 @@ local function BuildMainPanel()
         sliderText:SetFontObject(ns.DB.announce and GameFontNormal or GameFontDisable)
     end
 
-    local msgLabel = Label(p, "Announcement text. Tags: {auto} automatic ad, {title} group title, {bracket} 2v2/3v3/duoq", 24, -416, "GameFontHighlightSmall")
-    local box = CreateFrame("EditBox", NextName("Edit"), p, "InputBoxTemplate")
-    box:SetAutoFocus(false)
-    box:SetMaxLetters(255)
-    box:SetWidth(380); box:SetHeight(20)
-    box:SetPoint("TOPLEFT", 30, -434)
-    local function Commit(self)
-        if ns.DB then ns.SetAnnounceMessage(self:GetText()) end
-    end
-    box:SetScript("OnEnterPressed", function(self) Commit(self); self:ClearFocus() end)
-    box:SetScript("OnEscapePressed", function(self) self:ClearFocus(); ns.RefreshOptions() end)
-    box:SetScript("OnEditFocusLost", Commit)
-    Button(p, "Reset", 60, function() box:ClearFocus(); ns.SetAnnounceMessage(""); ns.RefreshOptions() end)
-        :SetPoint("TOPLEFT", 420, -432)
-    refreshers[#refreshers + 1] = function()
-        if not box:HasFocus() then local saved = ns.DB.announceMessage; box:SetText((saved and saved ~= "") and saved or "{auto} - {title}") end
-        box:SetCursorPosition(0)
-        local on = ns.DB.announce
-        msgLabel:SetFontObject(on and GameFontHighlightSmall or GameFontDisableSmall)
-        if on then box:Enable() else box:Disable() end
-    end
-
     p.refresh = ns.RefreshOptions
     p.default = function() ns.ResetProfile() end
     p:SetScript("OnShow", ns.RefreshOptions)
