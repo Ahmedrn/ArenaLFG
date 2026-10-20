@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0
 
 - The Global announcement now ends with your group title when you set one.
 
