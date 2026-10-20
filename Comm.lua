@@ -236,7 +236,7 @@ local function AnnouncementText()
     local title = listing and listing.note and strtrim(listing.note) or ""
     local template = ns.DB and ns.DB.announceMessage
     template = type(template) == "string" and strtrim(template) or ""
-    if template == "" then template = "{auto} - {title}" end
+    if template == "" then template = "{auto} - {title}" end -- same as the profile default
 
     local values = { auto = auto, title = title, bracket = ns.BracketTag(listing.bracket) }
     local text = template:gsub("{(%a+)}", function(key) return values[key] end)
@@ -246,7 +246,7 @@ end
 
 function ns.SetAnnounceMessage(text)
     if not ns.DB then return end
-    ns.DB.announceMessage = strsub(strtrim(tostring(text or "")), 1, 255)
+    ns.DB.announceMessage = strsub(strtrim(tostring(text or "")), 1, 255) -- empty = default template
     ns.Changed()
 end
 
