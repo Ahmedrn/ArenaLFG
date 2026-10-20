@@ -123,6 +123,7 @@ local profileDefaults = {
     globalChannel = "Global",
     announce = false,
     announceInterval = 2, -- minutes between Global announcements
+    announceMessage = "", -- custom Global announcement; empty = generated ad, {auto} = generated ad inside custom text
     pvpIntegration = true,
     soundAlerts = true,
     matchAlerts = true,

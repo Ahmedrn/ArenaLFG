@@ -11,7 +11,7 @@
 - **Brackets:** tabs for 2v2, 3v3 and DuoQ (Solo Queue). Your team and rating are read from the matching arena team. In 3v3, pick a comp (for example Thunder Cleave) and whether you are alone or already have a partner; the specs still needed are filled in for you.
 - **Group browser** with faction and race icons, class-colored player names, specialization icons, listing age, search and filters for role, team / no team, seasonal / non-seasonal, and "10 games only". ArenaLFG listings appear before Global chat ads; within each group, the most recently posted listings appear first.
 - **Chat ad import:** clear 2v2, 3v3 and duo partner ads can appear as temporary listings. Parsed details may be incomplete or inaccurate. The selected-ad button opens a whisper; use the row's right-click menu to invite.
-- **Optional Global announcement:** opt in to share your listed group in Global. Posts are public and subject to server chat rules; toggle announcements and set how often they post (every 2 to 30 minutes) in the options, or use `/alfg announce on` / `/alfg announce off`.
+- **Optional Global announcement:** opt in to share your listed group in Global. Posts are public and subject to server chat rules; toggle announcements and set how often they post (every 2 to 30 minutes) and optionally write your own message (tags `{auto}`, `{title}`, `{bracket}`; your group title is appended by default) in the options, or use `/alfg announce on` / `/alfg announce off`.
 - **At a glance:** rows are tinted red (declined you), blue (friends) or green (guildmates), and the Filter menu has *Looking for my spec*. Hide players from the right-click menu (`/alfg hidden`, `/alfg unhide <name>`). The window remembers its position, and you are told once when another ArenaLFG user runs a newer version.
 - **Applicants:** the list shows each applicant's rating and gearscore and can be sorted by clicking a column. Right-click a listing and choose *Send application* to whisper your spec, class, gearscore and experience.
 - **AFK:** your listing is removed while you are AFK and restored when you are back.
@@ -90,8 +90,7 @@ When you list a group, your **character name, class, spec, role, gearscore, team
 
 ## Troubleshooting
 
-- **ArenaLFG listings are not appearing:** make sure other players are using the addon too, then run `/alfg comm` to check or retry the connection.
-- **The list stays empty:** the addon is only useful when other players run it too. Ask a friend to install it, post a group, and press the refresh button.
+- **ArenaLFG listings are not appearing:** make sure other players are using the addon too, then run `/alfg comm` to check or retry the connect
 - **A Global chat ad did not appear:** only clear 2v2, 3v3 and duo partner-seeking messages are imported, and some wording may not be recognized.
 - **Your arena team is not detected:** run `/alfg me` and check the arena slots it prints. Open the PvP / arena team frame once, then `/reload`.
 - **The addon does not appear in the AddOns list:** check that the folder is named `ArenaLFG` and contains `ArenaLFG.toc` directly (not another folder inside).

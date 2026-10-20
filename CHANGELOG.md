@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Customize the Global announcement text in the options (tags `{auto}`, `{title}`, `{bracket}`); the Global announcement now ends with your group title when you set one.
+
 ## 2.0.0
 
 - Applicants list shows team rating and gearscore and sorts by name, role, rating or gearscore; *Send application* in a row's right-click menu prefills a whisper with your spec, class, gearscore and experience.
