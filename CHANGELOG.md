@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- *Copy armory link* in a listing's right-click menu shows the player's Warmane armory URL, preselected for Ctrl+C.
+
 ## 2.1.0
 
 - The Global announcement now ends with your group title when you set one.
