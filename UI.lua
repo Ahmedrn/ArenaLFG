@@ -325,6 +325,38 @@ function ns.SortApplicants(key)
     ns.RefreshAll()
 end
 
+-- No clipboard access in 3.3.5: show the link preselected so the player can Ctrl+C it
+StaticPopupDialogs["ARENALFG_ARMORY_LINK"] = {
+    text = "Warmane armory link for %s\n(Ctrl+C to copy, then paste it in your browser)",
+    button1 = OKAY,
+    hasEditBox = 1,
+    maxLetters = 255,
+    editBoxWidth = 330,
+    timeout = 0,
+    whileDead = 1,
+    hideOnEscape = 1,
+    OnShow = function(self, url)
+        self.editBox:SetText(url or "")
+        self.editBox:HighlightText()
+        self.editBox:SetFocus()
+    end,
+    EditBoxOnTextChanged = function(self, url)
+        if self:GetText() ~= url then
+            self:SetText(url or "")
+            self:HighlightText()
+        end
+    end,
+    EditBoxOnEnterPressed = function(self) self:GetParent():Hide() end,
+    EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+}
+
+local function ShowArmoryLink(name)
+    -- the armory wants "Blackrock", not the in-game "Blackrock [PvP only]"
+    local realm = (GetRealmName() or ""):gsub("%s*%[.-%]", ""):gsub("^%s+", ""):gsub("%s+$", ""):gsub(" ", "%%20")
+    StaticPopup_Show("ARENALFG_ARMORY_LINK", name, nil,
+        "https://armory.warmane.com/character/" .. name .. "/" .. realm .. "/summary")
+end
+
 local function RowClick(row, button)
     local l = row.data
     if not l then return end
@@ -348,6 +380,7 @@ local function RowClick(row, button)
                 ChatFrame_OpenChat("/w " .. l.name .. " " .. ns.ApplicationText())
             end },
             { text = "Invite to group", notCheckable = true, func = function() InviteUnit(l.name) end },
+            { text = "Copy armory link", notCheckable = true, func = function() ShowArmoryLink(l.name) end },
             { text = "Hide this player", notCheckable = true, func = function() ns.HidePlayer(l.name, true) end },
             { text = "Cancel", notCheckable = true },
         }, menuFrame, "cursor", 0, 0, "MENU")
@@ -1100,7 +1133,7 @@ local function BuildFormView(parent, f)
     w.ten:SetPoint("TOPLEFT", 6, -262)
     Track(w.ten, 6, -262)
 
-    Track(MakeLabel(p, "Group title (optional)", 12, -298), 12, -298)
+    Track(MakeLabel(p, "Group title (optional, also in Global post)", 12, -298), 12, -298)
     w.note = MakeEdit(p, 256, false, 60)
     w.note:SetPoint("TOPLEFT", 16, -318)
     Track(w.note, 16, -318)

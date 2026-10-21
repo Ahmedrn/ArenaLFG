@@ -226,6 +226,16 @@ local function BuildAnnouncement()
     return owner .. " LF " .. lookingFor .. " " .. ns.BracketTag(listing.bracket) .. rating .. " (ArenaLFG)"
 end
 
+-- The generated ad, followed by the listing's group title when one is set.
+local function AnnouncementText()
+    local auto = BuildAnnouncement()
+    if not auto then return nil end
+    local listing = ns.MyListing()
+    local title = listing and listing.note and strtrim(listing.note) or ""
+    if title ~= "" then auto = auto .. " - " .. title end
+    return strsub(auto, 1, 255)
+end
+
 function ns.TryAnnounceMine()
     if not (ns.DB and ns.DB.announce and ns.mine and ns.mine.posted) then return false end
     if ns.GroupBlocksListing() or ns.InPvpInstance() then return false end
@@ -241,7 +251,7 @@ function ns.TryAnnounceMine()
     local channelId = tonumber((GetChannelName(channelName))) or 0
     if channelId <= 0 then return false end
 
-    local message = BuildAnnouncement()
+    local message = AnnouncementText()
     if not message then return false end
     local ok, err = pcall(SendChatMessage, message, "CHANNEL", nil, channelId)
     if not ok then
