@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- An *About* page under ArenaLFG in the Interface options: how to get help (GitHub issues, Warperia, Discord) and the other addons by Skom.
 - *Copy armory link* in a listing's right-click menu shows the player's Warmane armory URL, preselected for Ctrl+C.
 
 ## 2.1.0
