@@ -7,7 +7,7 @@ local uid = 0
 local function NextName(prefix) uid = uid + 1; return "ArenaLFGOptions" .. prefix .. uid end
 
 local refreshers = {}
-local mainPanel, profilePanel
+local mainPanel, profilePanel, aboutPanel
 
 ----------------------------------------------------------------------
 -- Widget helpers (stock Blizzard templates only)
@@ -344,6 +344,64 @@ local function BuildProfilePanel()
 end
 
 ----------------------------------------------------------------------
+-- About page
+----------------------------------------------------------------------
+local OTHER_ADDONS = {
+    { "SkomsPlateBuffs", "Enemy nameplate auras in rows around the plate: crowd control, immunities, cooldowns and your own debuffs." },
+    { "SkomsProcGlow", "Glows your action buttons when a spell is worth pressing: procs, execute range, usable-now spells." },
+    { "SkomsHealerCC", "A big alert with a countdown and a sound when an enemy crowd control lands on your healer." },
+    { "SkomsAdvancedInterfaceOptions", "The hidden game settings (camera, nameplates, combat, chat, sound ...) in one window." },
+    { "SkomsProfileSync", "Copy the bars, keybinds, macros and addon profiles of one character to your others." },
+    { "SkomsChatShield", "Hides spam in every chat channel." },
+}
+
+local function ReadOnlyBox(parent, text, x, y, width)
+    local box = CreateFrame("EditBox", NextName("About"), parent, "InputBoxTemplate")
+    box:SetPoint("TOPLEFT", x, y)
+    box:SetWidth(width)
+    box:SetHeight(20)
+    box:SetAutoFocus(false)
+    box:SetText(text)
+    box:SetCursorPosition(0)
+    box:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+    box:SetScript("OnTextChanged", function(self) if self:GetText() ~= text then self:SetText(text) end end)
+    box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    return box
+end
+
+local function BuildAboutPanel()
+    local p = CreateFrame("Frame", "ArenaLFGAboutPanel", UIParent)
+    p.name = "About"
+    p.parent = mainPanel.name
+
+    local title = p:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText("About")
+    local intro = Label(p, "ArenaLFG v" .. ns.VERSION .. " by Skom. |cffff8800Made for the Warmane server.|r", 16, -42)
+
+    Header(p, "Help and feedback", -70)
+    local help = Label(p, "A bug, something missing, or an idea? Tell me on GitHub (the address below), in a comment on the"
+        .. " Warperia page, or on Discord: |cffffd100skomzx|r (direct message).", 16, -92, "GameFontHighlightSmall")
+    help:SetWidth(560)
+    ReadOnlyBox(p, "https://github.com/Ahmedrn/ArenaLFG/issues", 20, -126, 380)
+
+    Header(p, "My other addons", -162)
+    local y = -186
+    for _, e in ipairs(OTHER_ADDONS) do
+        local _, atitle = GetAddOnInfo(e[1])
+        local state = atitle and "|cff55ff55installed|r" or "|cff999999not installed|r"
+        local fs = Label(p, "|cffffd100" .. e[1] .. "|r (" .. state .. ")  " .. e[2], 16, y, "GameFontHighlightSmall")
+        fs:SetWidth(560)
+        y = y - 34
+    end
+    Label(p, "All of them:", 16, y - 4, "GameFontNormalSmall")
+    ReadOnlyBox(p, "https://github.com/Ahmedrn", 20, y - 22, 380)
+
+    InterfaceOptions_AddCategory(p)
+    return p
+end
+
+----------------------------------------------------------------------
 -- Public
 ----------------------------------------------------------------------
 function ns.RefreshOptions()
@@ -355,6 +413,7 @@ function ns.BuildOptions()
     if mainPanel then return end
     mainPanel = BuildMainPanel()
     profilePanel = BuildProfilePanel()
+    aboutPanel = BuildAboutPanel()
     ns.RefreshOptions()
 end
 
