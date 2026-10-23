@@ -52,7 +52,7 @@ function ns.Encode(l)
     return table.concat({
         "AL1", l.class, clean(l.spec), clean(l.role), l.gs or 0,
         b(l.hasTeam), l.teamRating or 0, l.tier or 1,
-        b(l.seasonal), b(l.tenGames), clean(l.note),
+        b(l.seasonal), b(l.tenGames), clean(strsub(l.note or "", 1, 60)),
         l.targetRole or "Any", EncodeTargetSpecs(l), clean(l.specId), clean(l.race),
         ns.NormalizeBracket(l.bracket), clean(l.haveSpec), clean(ns.VERSION),
     }, SEP)

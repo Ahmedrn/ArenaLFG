@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## 2.2.0
 
-- An *About* page under ArenaLFG in the Interface options: how to get help (GitHub issues, Warperia, Discord) and the other addons by Skom.
-- *Copy armory link* in a listing's right-click menu shows the player's Warmane armory URL, preselected for Ctrl+C.
+- The group title is prefilled from your choices and follows them until you type your own. It is what the Global announcement posts, followed by "(ArenaLFG)".
+- *Different message for Global chat* in the listing form lets you write a separate announcement.
+- Title and Global message are kept per bracket (2v2, 3v3, DuoQ) and saved as you type.
+- An *About* page in the options with help links and the other Skom addons.
+- *Copy armory link* in a listing's right-click menu.
 
 ## 2.1.0
 

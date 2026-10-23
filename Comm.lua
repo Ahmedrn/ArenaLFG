@@ -177,8 +177,7 @@ function ns.SetAnnounceEnabled(enabled)
     ns.Changed()
 end
 
-local function BuildAnnouncement()
-    local listing = ns.MyListing()
+local function BuildAnnouncement(listing)
     if not listing then return nil end
 
     local specId = ns.GetMySpecId()
@@ -223,17 +222,42 @@ local function BuildAnnouncement()
     if experience then
         rating = rating .. " Exp: " .. experience
     end
-    return owner .. " LF " .. lookingFor .. " " .. ns.BracketTag(listing.bracket) .. rating .. " (ArenaLFG)"
+    return owner .. " LF " .. lookingFor .. " " .. ns.BracketTag(listing.bracket) .. rating
 end
 
--- The generated ad, followed by the listing's group title when one is set.
-local function AnnouncementText()
-    local auto = BuildAnnouncement()
-    if not auto then return nil end
-    local listing = ns.MyListing()
-    local title = listing and listing.note and strtrim(listing.note) or ""
-    if title ~= "" then auto = auto .. " - " .. title end
-    return strsub(auto, 1, 255)
+-- The group title: the player's own, or the one generated from the form (the generated ad of the Global post).
+local TAG = " (ArenaLFG)"
+
+local function EffectiveTitle(listing)
+    local own = strtrim((ns.mine and ns.mine.note) or "")
+    if own ~= "" then return own end
+    return BuildAnnouncement(listing)
+end
+
+local function WithTag(text)
+    if lower(text):find("arenalfg", 1, true) then return strsub(text, 1, 255) end
+    return strsub(text, 1, 255 - #TAG) .. TAG
+end
+
+-- What is posted in Global: the player's own Global message (when "different message for Global chat" is ticked and
+-- filled in) or the group title, always followed by "(ArenaLFG)".
+local function AnnouncementText(listing)
+    listing = listing or ns.MyListing()
+    if not listing then return nil end
+    local custom = ns.mine and ns.mine.customGlobal and strtrim(ns.mine.globalText or "") or ""
+    if custom ~= "" then return WithTag(custom) end
+    local title = EffectiveTitle(listing)
+    return title and WithTag(title) or nil
+end
+
+-- the title generated from the form (it prefills the title box of the listing form) ...
+function ns.GeneratedTitle()
+    return BuildAnnouncement(ns.BuildMine()) or ""
+end
+
+-- ... and the default of the Global message box: the title as it is now (the tag is added when posting)
+function ns.GlobalDefaultText()
+    return EffectiveTitle(ns.BuildMine()) or ""
 end
 
 function ns.TryAnnounceMine()

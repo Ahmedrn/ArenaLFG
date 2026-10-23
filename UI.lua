@@ -1,6 +1,6 @@
 local ADDON, ns = ...
 
-local ROW_H, ROWS = 38, 8
+local ROW_H, ROWS = 38, 11
 local FACTION_SIZE = 26
 local FACTION_TEXT_X = 39
 local FACTION_COORDS = {
@@ -236,6 +236,31 @@ local function MakeEdit(parent, width, numeric, maxLetters)
     e:SetScript("OnEscapePressed", e.ClearFocus)
     e:SetScript("OnEnterPressed", e.ClearFocus)
     return e
+end
+
+-- A framed text box that wraps over several lines; returns the frame (place it) and the edit box (read/write it).
+local function MakeTextBox(parent, width, height, maxLetters)
+    local box = CreateFrame("Frame", nil, parent)
+    box:SetWidth(width); box:SetHeight(height)
+    box:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    box:SetBackdropColor(0, 0, 0, 0.6)
+    local e = CreateFrame("EditBox", NextName("Edit"), box)
+    e:SetMultiLine(true)
+    e:SetFontObject(ChatFontNormal)
+    e:SetPoint("TOPLEFT", 7, -6)
+    e:SetWidth(width - 14); e:SetHeight(height - 12)
+    e:SetMaxLetters(maxLetters)
+    e:SetAutoFocus(false)
+    e:SetScript("OnEscapePressed", e.ClearFocus)
+    e:SetScript("OnEnterPressed", e.ClearFocus)
+    box:EnableMouse(true)
+    box:SetScript("OnMouseDown", function() e:SetFocus() end)
+    return box, e
 end
 
 local function MakeLabel(parent, text, x, y, template)
@@ -1133,14 +1158,95 @@ local function BuildFormView(parent, f)
     w.ten:SetPoint("TOPLEFT", 6, -262)
     Track(w.ten, 6, -262)
 
-    Track(MakeLabel(p, "Group title (optional, also in Global post)", 12, -298), 12, -298)
-    w.note = MakeEdit(p, 256, false, 60)
-    w.note:SetPoint("TOPLEFT", 16, -318)
-    Track(w.note, 16, -318)
+    Track(MakeLabel(p, "Group title", 12, -298), 12, -298)
+    local noteBox
+    noteBox, w.note = MakeTextBox(p, 268, 40, 100)
+    noteBox:SetPoint("TOPLEFT", 12, -316)
+    Track(noteBox, 12, -316)
+
+    -- Both boxes are prefilled and follow the form until the player types in them (an emptied box goes back to
+    -- the generated text). What is typed is saved as it is typed, so a reload or a disconnect does not lose it.
+    local settingNote, settingBox = false, false
+    local function SetNote(text)
+        settingNote = true
+        w.note:SetText(text or "")
+        w.note:SetCursorPosition(0)
+        settingNote = false
+    end
+    local function SetBox(text)
+        settingBox = true
+        w.globalText:SetText(text or "")
+        w.globalText:SetCursorPosition(0)
+        settingBox = false
+    end
+    local function ShowFields()
+        -- title
+        if (m.note or "") ~= "" then
+            w.note:SetTextColor(1, 1, 1)
+            if not w.note:HasFocus() and w.note:GetText() ~= m.note then SetNote(m.note) end
+        else
+            w.note:SetTextColor(0.75, 0.75, 0.75)
+            if not w.note:HasFocus() then
+                local text = ns.GeneratedTitle and ns.GeneratedTitle() or ""
+                if w.note:GetText() ~= text then SetNote(text) end
+            end
+        end
+        -- Global message
+        if m.customGlobal then
+            if (m.globalText or "") ~= "" then
+                w.globalText:SetTextColor(1, 1, 1)
+                if not w.globalText:HasFocus() and w.globalText:GetText() ~= m.globalText then SetBox(m.globalText) end
+            else
+                w.globalText:SetTextColor(0.75, 0.75, 0.75)
+                if not w.globalText:HasFocus() then
+                    local text = ns.GlobalDefaultText and ns.GlobalDefaultText() or ""
+                    if w.globalText:GetText() ~= text then SetBox(text) end
+                end
+            end
+        end
+    end
+    w.ShowFields = ShowFields
+
+    w.note:SetScript("OnTextChanged", function(self)
+        if settingNote then return end
+        m.note = (self:GetText():gsub("[\r\n|]", " "))
+        ShowFields()
+    end)
+    w.note:SetScript("OnEditFocusLost", function() ShowFields() end)
+
+    w.customGlobal = MakeCheck(p, "Different message for Global chat", function(on)
+        m.customGlobal = on and true or false
+        ns.UI_LoadMine()
+    end)
+    w.customGlobal:SetPoint("TOPLEFT", 6, -360)
+    Track(w.customGlobal, 6, -360)
+
+    w.globalLabel = MakeLabel(p, "Global chat announcement", 12, -392)
+    Track(w.globalLabel, 12, -392)
+    local box
+    box, w.globalText = MakeTextBox(p, 268, 54, 255)
+    box:SetPoint("TOPLEFT", 12, -412)
+    Track(box, 12, -412)
+    w.globalText:SetScript("OnTextChanged", function(self)
+        if settingBox then return end
+        m.globalText = (self:GetText():gsub("[\r\n|]", " "))
+        ShowFields()
+    end)
+    w.globalText:SetScript("OnEditFocusLost", function() ShowFields() end)
+    w.globalBox = box
+
+    -- the generated texts follow the other settings of the form (spec, rating, experience ...)
+    local since = 0
+    p:SetScript("OnUpdate", function(_, elapsed)
+        since = since + elapsed
+        if since >= 0.5 then
+            since = 0
+            ShowFields()
+        end
+    end)
 
     w.post = MakeButton(p, "List Group", 124, 24)
-    w.post:SetPoint("TOPLEFT", 12, -352)
-    Track(w.post, 12, -352)
+    w.post:SetPoint("TOPLEFT", 12, -396) -- LayoutForm moves it under the Global message box when that is shown
     w.post:SetScript("OnClick", function() ns.PostMine() end)
     w.back = MakeButton(p, "Back", 124, 24)
     w.back:SetPoint("LEFT", w.post, "RIGHT", 6, 0)
@@ -1178,6 +1284,9 @@ local function LayoutForm(f)
     Vis(w.groupLabel, compMode); Vis(w.group, compMode)
     Vis(w.seekLabel, not compMode); Vis(w.targetRole, not compMode); Vis(w.targetSpecs, not compMode)
     for _, t in ipairs(w.lower) do Put(t[1], t[2], t[3] - dy) end
+    local global = m.customGlobal
+    Vis(w.globalLabel, global); Vis(w.globalBox, global)
+    Put(w.post, 12, (global and -474 or -396) - dy)
 end
 
 function ns.UI_LoadMine()
@@ -1210,7 +1319,8 @@ function ns.UI_LoadMine()
     w.rating:SetText(m.hasTeam and ("|cffffd100(Rating: " .. m.teamRating .. ")|r") or "")
     w.seasonal:SetChecked(m.seasonal)
     w.ten:SetChecked(m.tenGames)
-    w.note:SetText(m.note or "")
+    w.customGlobal:SetChecked(m.customGlobal)
+    w.ShowFields()
 
     local txt = (info.team and (ns.TeamLabel(m.bracket) .. " \"" .. info.team .. "\" found") or ("No " .. ns.TeamLabel(m.bracket) .. " found on this character"))
         .. (info.gs and "; gearscore read from your GearScore addon."
@@ -1226,7 +1336,6 @@ function ns.SaveMine()
     if not f then return end
     local m, w = ns.mine, f.mineWidgets
     m.gs = tonumber(w.gs:GetText()) or 0
-    m.note = (w.note:GetText():gsub("|", "/"))
 end
 
 ----------------------------------------------------------------------
@@ -1253,6 +1362,11 @@ end
 function ns.SetViewBracket(bracket)
     local f = ns.frame
     ns.viewBracket = ns.NormalizeBracket(bracket)
+    -- the boxes of the form hold the text of the bracket being left: let go of them so they load the new one
+    if f and f.mineWidgets then
+        f.mineWidgets.note:ClearFocus()
+        f.mineWidgets.globalText:ClearFocus()
+    end
     if not ns.mine.posted then
         if f and f.mine:IsShown() then ns.SaveMine() end
         ns.SetMineBracket(ns.viewBracket)
@@ -1317,7 +1431,7 @@ end
 function ns.BuildUI()
     local f = CreateFrame("Frame", "ArenaLFGFrame", UIParent)
     f:Hide()
-    f:SetWidth(880); f:SetHeight(510)
+    f:SetWidth(880); f:SetHeight(622)
     f:SetPoint("CENTER")
     local pos = ns.SV and ns.SV.framePos
     if type(pos) == "table" and pos[1] and pos[2] then
@@ -1356,7 +1470,7 @@ function ns.BuildUI()
     close:SetPoint("TOPRIGHT", -6, -6)
 
     -- Left panel: my group
-    local left = MakePanel(f, 292, 418)
+    local left = MakePanel(f, 292, 530)
     left:SetPoint("TOPLEFT", 18, -44)
     f.left = left
     f.mine = BuildFormView(left, f)
@@ -1364,7 +1478,7 @@ function ns.BuildUI()
     f.mine:Hide(); f.groupView:Hide()
 
     -- Right panel: groups
-    local right = MakePanel(f, 544, 418)
+    local right = MakePanel(f, 544, 530)
     right:SetPoint("TOPLEFT", 318, -44)
     f.right = right
 

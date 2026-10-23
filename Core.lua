@@ -26,7 +26,8 @@ function ns.SetMineBracket(bracket)
     local specs = {}
     for id, on in pairs(m.targetSpecs or {}) do specs[id] = on end
     m.seeks[m.bracket] = { role = m.targetRole, any = m.targetAny, specs = specs,
-        comp = m.comp, haveSpec = m.haveSpec }
+        comp = m.comp, haveSpec = m.haveSpec,
+        note = m.note, customGlobal = m.customGlobal, globalText = m.globalText }
     local saved = m.seeks[bracket]
     m.bracket = bracket
     m.targetRole = saved and saved.role or "Any"
@@ -34,6 +35,10 @@ function ns.SetMineBracket(bracket)
     m.targetSpecs = saved and saved.specs or {}
     m.comp = saved and saved.comp or nil
     m.haveSpec = saved and saved.haveSpec or nil
+    -- the group title and the Global message are kept per bracket too
+    m.note = saved and saved.note or ""
+    m.customGlobal = saved and saved.customGlobal or false
+    m.globalText = saved and saved.globalText or ""
     ns.SanitizeMine()
 end
 
@@ -141,8 +146,8 @@ local mineDefaults = {
     role = "DPS", gs = 0, bracket = "2v2",
     hasTeam = false, teamRating = 0,
     tier = 1, seasonal = false, tenGames = false,
-    note = "", targetRole = "Any", targetAny = false, targetSpecs = {}, posted = false,
-    seeks = {}, -- seeking choices remembered per bracket
+    note = "", globalText = "", customGlobal = false, targetRole = "Any", targetAny = false, targetSpecs = {}, posted = false,
+    seeks = {}, -- seeking choices, group title and Global message remembered per bracket
 }
 
 -- Stock 3.3.5 sound kits that can be picked for the alerts
