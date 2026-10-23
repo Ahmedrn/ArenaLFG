@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Your listing updates by itself when you join a team or your rating changes (no more delist / relist).
+- The generated group title keeps following your rating; it no longer gets saved as your own text.
+
 ## 2.2.0
 
 - The group title is prefilled from your choices and follows them until you type your own. It is what the Global announcement posts, followed by "(ArenaLFG)".

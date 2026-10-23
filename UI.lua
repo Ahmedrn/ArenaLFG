@@ -1210,6 +1210,8 @@ local function BuildFormView(parent, f)
     w.note:SetScript("OnTextChanged", function(self)
         if settingNote then return end
         m.note = (self:GetText():gsub("[\r\n|]", " "))
+        -- the generated text itself is not "your own": it keeps following the form (rating, spec ...)
+        if m.note == (ns.GeneratedTitle and ns.GeneratedTitle() or "") then m.note = "" end
         ShowFields()
     end)
     w.note:SetScript("OnEditFocusLost", function() ShowFields() end)
@@ -1230,6 +1232,7 @@ local function BuildFormView(parent, f)
     w.globalText:SetScript("OnTextChanged", function(self)
         if settingBox then return end
         m.globalText = (self:GetText():gsub("[\r\n|]", " "))
+        if m.globalText == (ns.GlobalDefaultText and ns.GlobalDefaultText() or "") then m.globalText = "" end
         ShowFields()
     end)
     w.globalText:SetScript("OnEditFocusLost", function() ShowFields() end)

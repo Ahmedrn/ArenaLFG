@@ -386,11 +386,12 @@ f:SetScript("OnEvent", function()
     local editing = ns.frame and ns.frame.mine and ns.frame.mine:IsShown()
     if editing then ns.SaveMine() end
 
-    local oldRole = ns.mine.role
+    local oldRole, oldTeam, oldRating = ns.mine.role, ns.mine.hasTeam, ns.mine.teamRating
     ns.DetectMine()
     if editing then ns.UI_LoadMine() end
 
-    if ns.mine.posted and oldRole ~= ns.mine.role then
+    -- a new role or a new team / rating (joining a team, a game played) must reach the others without a relist
+    if ns.mine.posted and (oldRole ~= ns.mine.role or oldTeam ~= ns.mine.hasTeam or oldRating ~= ns.mine.teamRating) then
         ns.AddListing(ns.MyListing())
         ns.Broadcast()
     end
