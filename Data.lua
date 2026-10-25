@@ -397,6 +397,25 @@ f:SetScript("OnEvent", function()
     end
 end)
 
+-- The game does not send new team ratings by itself after a match: ask again when leaving an arena (the rating
+-- is final a moment later), and every minute while listed.
+local wasInArena = false
+local zone = CreateFrame("Frame")
+zone:RegisterEvent("PLAYER_ENTERING_WORLD")
+zone:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+zone:SetScript("OnEvent", function()
+    local _, kind = IsInInstance()
+    local inArena = kind == "arena"
+    if wasInArena and not inArena then
+        ns.After(3, ns.RequestArenaData)
+        ns.After(15, ns.RequestArenaData)
+    end
+    wasInArena = inArena
+end)
+ns.Every(60, function()
+    if ns.DB and ns.mine and ns.mine.posted then ns.RequestArenaData() end
+end)
+
 -- Pull what the game can tell us. The team of the selected bracket is authoritative: no team = no team.
 function ns.DetectMine()
     local m, info = ns.mine, {}

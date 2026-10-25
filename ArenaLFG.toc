@@ -3,12 +3,12 @@
 ## X-GitHub-Project-Homepage: https://github.com/Ahmedrn/ArenaLFG
 ## X-GitHub-Project-Licence: MIT
 ## X-GitHub-Project-Issues: https://github.com/Ahmedrn/ArenaLFG/issues
-## X-GitHub-Project-Download: https://github.com/Ahmedrn/ArenaLFG/releases/download/2.2.0/ArenaLFG-v2.2.0.zip
+## X-GitHub-Project-Download: https://github.com/Ahmedrn/ArenaLFG/releases/download/2.3.0/ArenaLFG-v2.3.0.zip
 
 ## Title: ArenaLFG
 ## Notes: 2v2, 3v3 and DuoQ arena partner finder with synced listings.
 ## Author: Skom
-## Version: 2.2.0
+## Version: 2.3.0
 ## SavedVariables: ArenaLFGDB
 ## OptionalDeps: GearScore, GearScoreLite
 

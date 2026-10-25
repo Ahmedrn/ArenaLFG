@@ -30,7 +30,7 @@
 
 ## Installation
 
-1. Download `ArenaLFG-v2.2.0.zip` from the [Releases page](../../releases) (do **not** use "Download ZIP" on the repository page, it creates a wrongly named folder).
+1. Download `ArenaLFG-v2.3.0.zip` from the [Releases page](../../releases) (do **not** use "Download ZIP" on the repository page, it creates a wrongly named folder).
 2. Extract it into your addons folder so the path looks like:
    ```
    World of Warcraft\Interface\AddOns\ArenaLFG\ArenaLFG.toc

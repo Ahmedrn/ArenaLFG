@@ -614,7 +614,3 @@ afkFrame:SetScript("OnEvent", function(self, event, unit)
         if m.posted then ns.Print("Welcome back, your listing was restored.") end
     end
 end)
-
--- Quick reload while developing: /rl
-SLASH_ARENALFGRL1 = "/rl"
-SlashCmdList["ARENALFGRL"] = ReloadUI

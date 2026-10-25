@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## 2.3.0
 
-- Your listing updates by itself when you join a team or your rating changes (no more delist / relist).
+- Your listing updates by itself when you join a team or your rating changes (no more delist / relist); the ratings are read again after each arena match and every minute while listed.
 - The generated group title keeps following your rating; it no longer gets saved as your own text.
+- Global ads that spell paladin "paly" are recognised ("Hpaly" is a Holy Paladin healer, also "rpaly", "prot paly" ...).
+- Removed the `/rl` reload shortcut: other addons use it too. Use `/reload`.
+- About page: the other addons are listed by their readable names, and Skoms Arena Stats is included.
 
 ## 2.2.0
 

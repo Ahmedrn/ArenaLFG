@@ -346,13 +346,15 @@ end
 ----------------------------------------------------------------------
 -- About page
 ----------------------------------------------------------------------
+-- folder, display name, what it does
 local OTHER_ADDONS = {
-    { "SkomsPlateBuffs", "Enemy nameplate auras in rows around the plate: crowd control, immunities, cooldowns and your own debuffs." },
-    { "SkomsProcGlow", "Glows your action buttons when a spell is worth pressing: procs, execute range, usable-now spells." },
-    { "SkomsHealerCC", "A big alert with a countdown and a sound when an enemy crowd control lands on your healer." },
-    { "SkomsAdvancedInterfaceOptions", "The hidden game settings (camera, nameplates, combat, chat, sound ...) in one window." },
-    { "SkomsProfileSync", "Copy the bars, keybinds, macros and addon profiles of one character to your others." },
-    { "SkomsChatShield", "Hides spam in every chat channel." },
+    { "SkomsPlateBuffs", "Skoms Plate Buffs", "Enemy nameplate auras in rows around the plate: crowd control, immunities, cooldowns and your own debuffs." },
+    { "SkomsProcGlow", "Skoms Proc Glow", "Glows your action buttons when a spell is worth pressing: procs, execute range, usable-now spells." },
+    { "SkomsHealerCC", "Skoms Healer CC", "A big alert with a countdown and a sound when an enemy crowd control lands on your healer." },
+    { "SkomsAdvancedInterfaceOptions", "Skoms Advanced Interface Options", "The hidden game settings (camera, nameplates, combat, chat, sound ...) in one window." },
+    { "SkomsProfileSync", "Skoms Profile Sync", "Copy the bars, keybinds, macros and addon profiles of one character to your others." },
+    { "SkomsChatShield", "Skoms Chat Shield", "Hides spam in every chat channel." },
+    { "SkomsArenaStats", "Skoms Arena Stats", "Arena history and a weekly summary of all your characters, with the arena points coming on reset day." },
 }
 
 local function ReadOnlyBox(parent, text, x, y, width)
@@ -390,7 +392,7 @@ local function BuildAboutPanel()
     for _, e in ipairs(OTHER_ADDONS) do
         local _, atitle = GetAddOnInfo(e[1])
         local state = atitle and "|cff55ff55installed|r" or "|cff999999not installed|r"
-        local fs = Label(p, "|cffffd100" .. e[1] .. "|r (" .. state .. ")  " .. e[2], 16, y, "GameFontHighlightSmall")
+        local fs = Label(p, "|cffffd100" .. e[2] .. "|r (" .. state .. ")  " .. e[3], 16, y, "GameFontHighlightSmall")
         fs:SetWidth(560)
         y = y - 34
     end

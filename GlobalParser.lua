@@ -2,7 +2,7 @@ local ADDON, ns = ...
 
 local CLASS_ALIASES = {
     WARRIOR = { "warrior", "warr" },
-    PALADIN = { "paladin", "pala", "pally" },
+    PALADIN = { "paladin", "pala", "pally", "paly" },
     HUNTER = { "hunter", "hunt" },
     ROGUE = { "rogue" },
     PRIEST = { "priest" },
@@ -39,13 +39,15 @@ local SPEC_ALIASES = {
     W3 = { "protection warrior", "protection warr", "prot warrior", "prot warr", "prot war",
         "pwar", "pwarr", "protwar", "warrior prot", "warr prot", "war prot" },
 
-    P1 = { "holy paladin", "holy pala", "holy pal", "holy pally", "hpala", "hpal", "hpally",
-        "h pala", "h pal", "holypala", "paladin holy", "pala holy" },
-    P2 = { "protection paladin", "prot paladin", "prot pala", "prot pal", "prot pally",
-        "ppala", "ppal", "ppally", "protpala", "preg", "paladin prot", "pala prot" },
+    P1 = { "holy paladin", "holy pala", "holy pal", "holy pally", "holy paly", "hpala", "hpal",
+        "hpally", "hpaly", "h pala", "h pal", "h paly", "holypala", "paladin holy", "pala holy",
+        "paly holy" },
+    P2 = { "protection paladin", "prot paladin", "prot pala", "prot pal", "prot pally", "prot paly",
+        "ppala", "ppal", "ppally", "ppaly", "protpala", "preg", "paladin prot", "pala prot",
+        "paly prot" },
     P3 = { "retribution paladin", "retribution", "ret paladin", "ret pala", "ret pal", "ret pally",
-        "retri paladin", "retri pala", "retri", "ret", "rpala", "rpal", "rpally",
-        "paladin ret", "pala ret" },
+        "ret paly", "retri paladin", "retri pala", "retri", "ret", "rpala", "rpal", "rpally",
+        "rpaly", "paladin ret", "pala ret", "paly ret" },
 
     H1 = { "beast mastery", "beastmastery", "beast master", "beastmaster",
         "bm hunter", "bm hunt", "bmh", "bm", "hunter bm", "hunt bm" },
