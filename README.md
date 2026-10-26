@@ -25,7 +25,7 @@
 
 ## Install
 
-Download `ArenaLFG-v2.3.1.zip` from the [Releases page](../../releases) and extract it so the path is `Interface\AddOns\ArenaLFG\ArenaLFG.toc`.
+Install it from Warperia, or download the zip from the [latest release](https://github.com/Ahmedrn/ArenaLFG/releases/latest) and extract it into `Interface\AddOns` (the folder must be named `ArenaLFG`).
 
 ## Commands
 
