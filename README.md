@@ -39,7 +39,9 @@ Your listing (name, class, spec, role, gearscore, rating, title) is shared only 
 
 ## Feedback
 
-Issues and pull requests are welcome. Please include your addon version, the output of `/alfg me` and any Lua error.
+- **GitHub:** https://github.com/Ahmedrn/ArenaLFG/issues
+- **Warperia:** comment on the addon page
+- **Discord:** `skomzx`
 
 ## License
 
