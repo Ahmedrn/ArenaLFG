@@ -346,15 +346,15 @@ end
 ----------------------------------------------------------------------
 -- About page
 ----------------------------------------------------------------------
--- folder, display name, what it does
+-- folder, display name, what it does, and an optional note (the server it is made for)
 local OTHER_ADDONS = {
-    { "SkomsPlateBuffs", "Skoms Plate Buffs", "Enemy nameplate auras in rows around the plate: crowd control, immunities, cooldowns and your own debuffs." },
-    { "SkomsProcGlow", "Skoms Proc Glow", "Glows your action buttons when a spell is worth pressing: procs, execute range, usable-now spells." },
-    { "SkomsHealerCC", "Skoms Healer CC", "A big alert with a countdown and a sound when an enemy crowd control lands on your healer." },
-    { "SkomsAdvancedInterfaceOptions", "Skoms Advanced Interface Options", "The hidden game settings (camera, nameplates, combat, chat, sound ...) in one window." },
-    { "SkomsProfileSync", "Skoms Profile Sync", "Copy the bars, keybinds, macros and addon profiles of one character to your others." },
-    { "SkomsChatShield", "Skoms Chat Shield", "Hides spam in every chat channel." },
-    { "SkomsArenaStats", "Skoms Arena Stats", "Arena history and a weekly summary of all your characters, with the arena points coming on reset day." },
+    { "SkomsPlateBuffs", "Skom's Plate Buffs", "Enemy nameplate auras in rows around the plate: crowd control, immunities, cooldowns and your own debuffs, with glow and a spells tab." },
+    { "SkomsProcGlow", "Skom's Proc Glow", "Glows your action buttons when a spell is worth pressing: procs, execute range, usable-now spells. Works with Bartender4." },
+    { "SkomsHealerCC", "Skom's Healer CC", "A big alert with a countdown and a sound when an enemy crowd control lands on your healer." },
+    { "SkomsAdvancedInterfaceOptions", "Skom's Advanced Interface Options", "The hidden game settings (camera, nameplates, combat, chat, sound ...) in one window, kept at every login." },
+    { "SkomsProfileSync", "Skom's Profile Sync", "Set up one character, then copy its bars, keybinds, macros, BindPad and addon profiles to your other characters." },
+    { "SkomsChatShield", "Skom's Chat Shield", "Hides spam in every chat channel: editable phrases, blocked players, repeat and copy-paste detection." },
+    { "SkomsArenaStats", "Skom's Arena Stats", "Arena history and a weekly summary of all your characters: games, rating, honor and the arena points coming on reset day.", "Warmane only: made for the Warmane server." },
 }
 
 local function ReadOnlyBox(parent, text, x, y, width)
@@ -392,7 +392,9 @@ local function BuildAboutPanel()
     for _, e in ipairs(OTHER_ADDONS) do
         local _, atitle = GetAddOnInfo(e[1])
         local state = atitle and "|cff55ff55installed|r" or "|cff999999not installed|r"
-        local fs = Label(p, "|cffffd100" .. e[2] .. "|r (" .. state .. ")  " .. e[3], 16, y, "GameFontHighlightSmall")
+        local text = "|cffffd100" .. e[2] .. "|r (" .. state .. ")  " .. e[3]
+        if e[4] then text = text .. " |cffff8800" .. e[4] .. "|r" end
+        local fs = Label(p, text, 16, y, "GameFontHighlightSmall")
         fs:SetWidth(560)
         y = y - 34
     end
@@ -424,4 +426,21 @@ function ns.OpenOptions()
     -- the first call on 3.3.5 sometimes only opens the frame without selecting the page
     InterfaceOptionsFrame_OpenToCategory(mainPanel)
     InterfaceOptionsFrame_OpenToCategory(mainPanel)
+    -- our window sits in DIALOG, the game's options in HIGH: lift the options above it until they close
+    local opts = InterfaceOptionsFrame
+    if opts and ns.frame and ns.frame:IsShown() then
+        if not opts.alfgStrata then
+            opts.alfgStrata = opts:GetFrameStrata()
+            opts:HookScript("OnHide", function(self)
+                if self.alfgLifted then
+                    self.alfgLifted = nil
+                    self:SetFrameStrata(self.alfgStrata)
+                end
+            end)
+        end
+        opts.alfgLifted = true
+        opts:SetFrameStrata("DIALOG")
+        opts:SetFrameLevel(ns.frame:GetFrameLevel() + 10)
+        opts:Raise()
+    end
 end

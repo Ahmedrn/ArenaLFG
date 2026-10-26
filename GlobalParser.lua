@@ -82,7 +82,8 @@ local SPEC_ALIASES = {
         "elemental", "elem", "ele", "shaman ele", "sham ele" },
     S2 = { "enhancement shaman", "enhancement shammy", "enhance shaman", "enhance sham",
         "enhance shammy", "enh shaman", "enh sham", "enh shammy", "ensham", "enhsham",
-        "enhancement", "enhance", "enha", "enh", "shaman enh", "sham enh" },
+        "enhancement", "enhance", "enha", "enh", "shaman enh", "sham enh",
+        "ench shaman", "ench sham", "ench shammy", "ench", "shaman ench", "sham ench" },
     S3 = { "restoration shaman", "restoration shammy", "resto shaman", "resto sham", "resto shammy",
         "rshaman", "rsham", "rshamy", "rshammy", "r shaman", "r sham", "r shammy",
         "shaman resto", "sham resto" },
@@ -377,6 +378,11 @@ local function HasOwnTeam(text)
     return HasAlias(text, TEAM_POSITIVES)
 end
 
+local function ParseSeasonal(text)
+    if text:find("non[%s%-]*season") then return false end
+    if text:find("%f[%a]season") then return true end
+end
+
 local function FindRace(text)
     for race, aliases in pairs(RACE_ALIASES) do
         if HasAlias(text, aliases) then return race end
@@ -587,7 +593,7 @@ function ns.ParseGlobalListing(message, sender, channel, channelName, channelNum
         teamKnown = hasTeam,
         teamRating = math.min(teamRating or 0, 3500),
         tier = tier,
-        seasonal = nil,
+        seasonal = ParseSeasonal(senderStats),
         tenGames = nil,
         note = displayMessage,
         targetRole = targetRole,
