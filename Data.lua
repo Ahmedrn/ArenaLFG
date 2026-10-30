@@ -132,6 +132,32 @@ function ns.IsValidSpecId(class, specId)
     return false
 end
 
+-- Talent tree names of the Spanish, French and German clients, in tree order. A sender on an old version has no
+-- spec id in his message, only this text; English names are shown as sent.
+local TREE_NAMES = {
+    WARRIOR = { { "Armas", "Armes", "Waffen" }, { "Furia", "Fureur", "Furor" }, { "Protección", "Protection", "Schutz" } },
+    PALADIN = { { "Sagrado", "Sacré", "Heilig" }, { "Protección", "Protection", "Schutz" }, { "Reprensión", "Vindicte", "Vergeltung" } },
+    HUNTER = { { "Dominio de las bestias", "Maîtrise des bêtes", "Tierherrschaft" }, { "Puntería", "Précision", "Treffsicherheit" }, { "Supervivencia", "Survie", "Überleben" } },
+    ROGUE = { { "Asesinato", "Assassinat", "Meucheln" }, { "Combate", "Combat", "Kampf" }, { "Sutileza", "Finesse", "Täuschung" } },
+    PRIEST = { { "Disciplina", "Discipline", "Disziplin" }, { "Sagrado", "Sacré", "Heilig" }, { "Sombras", "Ombre", "Schatten" } },
+    DEATHKNIGHT = { { "Sangre", "Sang", "Blut" }, { "Escarcha", "Givre", "Frost" }, { "Profano", "Impie", "Unheilig" } },
+    SHAMAN = { { "Elemental", "Élémentaire", "Elementar" }, { "Mejora", "Amélioration", "Verstärkung" }, { "Restauración", "Restauration", "Wiederherstellung" } },
+    MAGE = { { "Arcano", "Arcanes", "Arkan" }, { "Fuego", "Feu", "Feuer" }, { "Escarcha", "Givre", "Frost" } },
+    WARLOCK = { { "Aflicción", "Affliction", "Gebrechen" }, { "Demonología", "Démonologie", "Dämonologie" }, { "Destrucción", "Destruction", "Zerstörung" } },
+    DRUID = { { "Equilibrio", "Équilibre", "Gleichgewicht" }, { "Combate feral", "Combat farouche", "Wilder Kampf" }, { "Restauración", "Restauration", "Wiederherstellung" } },
+}
+
+-- "P3" for the paladin tree "Reprensión", or nil when the name is not known
+function ns.SpecIdFromTree(class, name)
+    local prefix, trees = SPEC_PREFIX_BY_CLASS[class], TREE_NAMES[class]
+    if not (prefix and trees) then return nil end
+    for tab, names in ipairs(trees) do
+        for _, n in ipairs(names) do
+            if n == name then return prefix .. tab end
+        end
+    end
+end
+
 function ns.GetSpecIcon(class, specId)
     if not ns.IsValidSpecId(class, specId) then return nil end
     for _, spec in ipairs(ns.PARTNER_SPECS) do

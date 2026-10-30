@@ -22,6 +22,7 @@
 - **Optional Global announcement** of your group, every 2 to 30 minutes.
 - **Auto-reply** while you are in an arena match, so nobody waits for an answer.
 - Opens beside the PvP window (H), with profiles and options.
+- **Skom's Arena Stats** opens in one click from ArenaLFG when it is installed.
 
 ## Install
 

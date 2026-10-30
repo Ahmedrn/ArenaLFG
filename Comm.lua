@@ -23,6 +23,8 @@ local SPEC_ABBREVIATIONS = {
     U1 = "Boomkin", U2 = "Feral", U3 = "Rdruid",
 }
 ns.SPEC_ABBREVIATIONS = SPEC_ABBREVIATIONS
+-- Global drops messages sent too close together ("limited, please wait"): the group post and the addon ad keep a gap
+local lastGlobalPostAt, GLOBAL_POST_GAP = 0, 60
 local lastBroadcastAt
 local lastRequestAt
 local requestResponsePending = false
@@ -273,10 +275,11 @@ function ns.TryAnnounceMine()
         return false
     end
     local channelId = tonumber((GetChannelName(channelName))) or 0
-    if channelId <= 0 then return false end
+    if channelId <= 0 or now - lastGlobalPostAt < GLOBAL_POST_GAP then return false end
 
     local message = AnnouncementText()
     if not message then return false end
+    lastGlobalPostAt = now
     local ok, err = pcall(SendChatMessage, message, "CHANNEL", nil, channelId)
     if not ok then
         ns.SV.announceLastAt = now
@@ -315,6 +318,21 @@ end
 
 ns.Every(30, function()
     ns.TryAnnounceMine()
+end)
+
+-- the ad for the addon itself (the Share menu's Global entry posts the same text by hand)
+ns.SHARE_GLOBAL_TEXT = "Tired of spamming Global for a partner? ArenaLFG lists 2v2, 3v3 and DuoQ groups, sign up in one click: https://warperia.com/addon-wotlk/arenalfg/"
+local AUTO_SHARE_SECONDS = 300
+
+ns.Every(30, function()
+    if not (ns.DB and ns.DB.autoShare) or ns.InPvpInstance() then return end
+    local now = time()
+    if now - (tonumber(ns.SV.shareLastAt) or 0) < AUTO_SHARE_SECONDS then return end
+    local channelId = tonumber((GetChannelName(ns.DB.globalChannel or "Global"))) or 0
+    if channelId <= 0 or now - lastGlobalPostAt < GLOBAL_POST_GAP then return end
+    lastGlobalPostAt = now
+    ns.SV.shareLastAt = now
+    SendChatMessage(ns.SHARE_GLOBAL_TEXT, "CHANNEL", nil, channelId)
 end)
 
 -- Heartbeat: re-announce your own listing so it does not expire
@@ -457,5 +475,56 @@ af:SetScript("OnEvent", function(self, event, prefix, msg, dist, sender)
         ns.applied[sender] = "declined"
         ns.Print(sender .. " declined your sign-up.")
         ns.Changed()
+    end
+end)
+
+-- Race (so the faction icon) of players on an old ArenaLFG version, which does not send it: a quiet /who by name,
+-- one at a time, each name once. The server only answers for your own faction.
+local whoPending, whoSince, friendsHadWho
+local whoTried = {}
+
+local function WhoDone()
+    whoPending = nil
+    if friendsHadWho then FriendsFrame:RegisterEvent("WHO_LIST_UPDATE") end
+    if not (WhoFrame and WhoFrame:IsShown()) then SetWhoToUI(0) end
+end
+
+local whoFrame = CreateFrame("Frame")
+whoFrame:RegisterEvent("WHO_LIST_UPDATE")
+whoFrame:SetScript("OnEvent", function()
+    if not whoPending then return end
+    local want = lower(whoPending)
+    for i = 1, GetNumWhoResults() do
+        local name, _, _, race = GetWhoInfo(i)
+        if name and lower(name) == want then
+            local token = ns.NormalizeRace(race) -- English client names only
+            if token then
+                ns.raceCache[whoPending] = token
+                local l = ns.listings[whoPending]
+                if l then l.race = token; ns.Changed() end
+            end
+            break
+        end
+    end
+    WhoDone()
+end)
+
+ns.Every(6, function()
+    if not (ns.DB and ns.DB.whoLookup) then return end
+    if whoPending then
+        if GetTime() - whoSince < 10 then return end
+        WhoDone() -- no answer
+    end
+    if WhoFrame and WhoFrame:IsShown() then return end -- the player is using /who
+    for name, l in pairs(ns.listings) do
+        if not l.race and not whoTried[name] and name ~= UnitName("player") then
+            whoTried[name] = true
+            whoPending, whoSince = name, GetTime()
+            friendsHadWho = FriendsFrame and FriendsFrame:IsEventRegistered("WHO_LIST_UPDATE")
+            if friendsHadWho then FriendsFrame:UnregisterEvent("WHO_LIST_UPDATE") end -- else the Friends window pops up
+            SetWhoToUI(1)
+            SendWho("n-" .. name)
+            return
+        end
     end
 end)

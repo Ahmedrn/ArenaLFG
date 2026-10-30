@@ -3,13 +3,13 @@
 ## X-GitHub-Project-Homepage: https://github.com/Ahmedrn/ArenaLFG
 ## X-GitHub-Project-Licence: MIT
 ## X-GitHub-Project-Issues: https://github.com/Ahmedrn/ArenaLFG/issues
-## X-GitHub-Project-Download: https://github.com/Ahmedrn/ArenaLFG/releases/download/2.3.1/ArenaLFG-v2.3.1.zip
+## X-GitHub-Project-Download: https://github.com/Ahmedrn/ArenaLFG/releases/download/ArenaLFG_2.4.0/ArenaLFG-v2.4.0.zip
 
 ## Title: ArenaLFG
 ## Notes: 2v2, 3v3 and DuoQ arena partner finder with synced listings.
 ## Author: Skom
-## Version: 2.3.1
-## SavedVariables: ArenaLFGDB
+## Version: 2.4.0
+## SavedVariables: ArenaLFGDB, SkomsLauncherDB
 ## OptionalDeps: GearScore, GearScoreLite
 
 Core.lua
@@ -20,3 +20,4 @@ Comm.lua
 Minimap.lua
 UI.lua
 Options.lua
+launcher.lua

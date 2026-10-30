@@ -12,7 +12,9 @@ end
 function ns.UpdateMinimapButton()
     if not btn then return end
     UpdatePosition()
-    if ns.DB.minimap.hide then btn:Hide() else btn:Show() end
+    -- with another Skom's addon, the shared Skom's button (launcher.lua) replaces this one
+    local shared = _G.SkomsLauncher and _G.SkomsLauncher.active
+    if ns.DB.minimap.hide or shared then btn:Hide() else btn:Show() end
 end
 
 -- While dragging: compute the angle between the minimap center and the cursor

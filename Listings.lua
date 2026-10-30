@@ -58,6 +58,13 @@ function ns.Encode(l)
     }, SEP)
 end
 
+-- The sender's spec text is in his client language: with a valid spec id, show our own (English) name instead
+local function SpecName(specId)
+    for _, spec in ipairs(ns.PARTNER_SPECS) do
+        if spec.id == specId then return (spec.label:gsub(" Death Knight$", ""):gsub(" %a+$", "")) end
+    end
+end
+
 function ns.Decode(msg, sender)
     local parts = {}
     for field in (msg .. SEP):gmatch("(.-)" .. SEP) do parts[#parts + 1] = field end
@@ -81,10 +88,11 @@ function ns.Decode(msg, sender)
             end
         end
     end
+    local specId = ns.IsValidSpecId(parts[2], parts[14]) and parts[14] or ns.SpecIdFromTree(parts[2], parts[3])
     return {
         name       = sender,
         class      = parts[2],
-        spec       = NoUrl(strsub(parts[3], 1, 20), "Unknown"),
+        spec       = specId and SpecName(specId) or (parts[3] ~= "None" and NoUrl(strsub(parts[3], 1, 20), "Unknown") or "Unknown"), -- "None": no talents yet
         role       = role,
         gs         = math.min(tonumber(parts[5]) or 0, 9999),
         hasTeam    = parts[6] == "1",
@@ -96,7 +104,7 @@ function ns.Decode(msg, sender)
         targetRole = targetRole,
         targetAny = targetAny,
         targetSpecs = targetSpecs,
-        specId = ns.IsValidSpecId(parts[2], parts[14]) and parts[14] or nil,
+        specId = specId,
         race = ns.NormalizeRace(parts[15]),
         bracket = bracket,
         haveSpec = bracket == "3v3" and ns.IsValidHaveSpec(parts[17]) and parts[17] or nil,
@@ -227,8 +235,11 @@ function ns.CheckVersion(version)
         .. "). Update it from Warperia: https://warperia.com/addon-wotlk/arenalfg/")
 end
 
+ns.raceCache = {} -- [name] = race token found with /who (Comm.lua), for senders that do not send their race
+
 function ns.AddListing(l)
     if l.name ~= UnitName("player") and ns.IsHidden(l.name) then return end
+    if not l.race then l.race = ns.raceCache[l.name] end
     local previous = ns.listings[l.name]
     l.listedAt = previous and previous.source == l.source and previous.listedAt or GetTime()
     l.seen = GetTime()
@@ -243,15 +254,17 @@ function ns.RemoveListing(name)
     ns.Changed()
 end
 
--- What /alfg-style applications say about me: "Arms Warrior 5659 GS - Exp: 2200+"
+-- What an application whisper says about me, short like the Global ads: "Awar, GS 5525, 951cr, Exp: 2200+ (ArenaLFG)"
 function ns.ApplicationText()
     local m = ns.BuildMine()
-    local spec = ns.GetMySpec()
-    local text = (spec ~= "None" and (spec .. " ") or "") .. (UnitClass("player") or "")
-    if m.gs and m.gs > 0 then text = text .. " " .. m.gs .. " GS" end
+    local who = ns.SPEC_ABBREVIATIONS[m.specId]
+        or ((m.spec ~= "None" and (m.spec .. " ") or "") .. (UnitClass("player") or ""))
+    local text = "Hi! Interested in your arena group: " .. who
+    if m.gs and m.gs > 0 then text = text .. ", GS " .. m.gs end
+    if m.hasTeam and m.teamRating and m.teamRating > 0 then text = text .. ", " .. m.teamRating .. "cr" end
     local tier = ns.TIERS[m.tier]
-    if tier then text = text .. " - Exp: " .. tier end
-    return text
+    if tier then text = text .. ", Exp: " .. tier end
+    return text .. " (ArenaLFG)"
 end
 
 -- Your own data as a listing table (also used when you sign up to someone else's group)

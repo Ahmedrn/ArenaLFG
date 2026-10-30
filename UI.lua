@@ -705,7 +705,7 @@ function ns.OpenShareMenu(anchor)
 
     if not (isArena or inParty) and not lastTell and not (targetName and targetName ~= UnitName("player")) then
         if channelId > 0 then
-            ChatFrame_OpenChat("/" .. channelId .. " Tired of spamming Global for a partner? ArenaLFG lists 2v2, 3v3 and DuoQ groups, sign up in one click: https://warperia.com/addon-wotlk/arenalfg/")
+            ChatFrame_OpenChat("/" .. channelId .. " " .. ns.SHARE_GLOBAL_TEXT)
         else
             ns.Print("Join your configured Global channel before sharing ArenaLFG.")
         end
@@ -742,7 +742,7 @@ function ns.OpenShareMenu(anchor)
             text = "Global (" .. channelName .. ")",
             notCheckable = true,
             func = function()
-                ChatFrame_OpenChat("/" .. channelId .. " Tired of spamming Global for a partner? ArenaLFG lists 2v2, 3v3 and DuoQ groups, sign up in one click: https://warperia.com/addon-wotlk/arenalfg/")
+                ChatFrame_OpenChat("/" .. channelId .. " " .. ns.SHARE_GLOBAL_TEXT)
             end,
         })
     end
@@ -1496,6 +1496,16 @@ function ns.BuildUI()
     share:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 24, 18)
     share:SetScript("OnClick", function(self) ns.OpenShareMenu(self) end)
 
+    -- Only shown when Skom's Arena Stats is installed and enabled
+    local stats = MakeButton(f, "Arena Stats", 90, 20)
+    stats:SetPoint("LEFT", share, "RIGHT", 6, 0)
+    stats:SetScript("OnClick", function() ns.OpenArenaStats() end)
+    local function UpdateStatsButton()
+        if ns.GetArenaStats() then stats:Show() else stats:Hide() end
+    end
+    UpdateStatsButton()
+    f:HookScript("OnShow", UpdateStatsButton)
+
     local options = MakeButton(f, "Options", 70, 20)
     options:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -24, 18)
     options:SetScript("OnClick", function() ns.OpenOptions() end)
@@ -1618,7 +1628,7 @@ function ns.BuildUI()
         local l = ns.selected and ns.listings[ns.selected]
         if not l then return end
         if l.source == "global" then
-            ChatFrame_SendTell(l.name)
+            ChatFrame_OpenChat("/w " .. l.name .. " " .. ns.ApplicationText())
         elseif ns.applied[l.name] == "pending" then
             ns.CancelApply(l)
         else
@@ -1637,6 +1647,39 @@ function ns.BuildUI()
         if f.mine:IsShown() then ns.SaveMine() end -- do not lose unsaved edits
     end)
     return f
+end
+
+-- Our window sits in DIALOG; another addon's window (or the game's options) opened
+-- from it is lifted above it until it closes, then put back in its own strata
+function ns.LiftAboveWindow(other)
+    if not other or not ns.frame or not ns.frame:IsShown() then return end
+    if not other.alfgStrata then
+        other.alfgStrata = other:GetFrameStrata()
+        other:HookScript("OnHide", function(self)
+            if self.alfgLifted then
+                self.alfgLifted = nil
+                self:SetFrameStrata(self.alfgStrata)
+            end
+        end)
+    end
+    other.alfgLifted = true
+    other:SetFrameStrata("DIALOG")
+    other:SetFrameLevel(ns.frame:GetFrameLevel() + 10)
+    other:Raise()
+end
+
+-- Skom's Arena Stats (an Ace3 addon), when installed and enabled
+function ns.GetArenaStats()
+    if not IsAddOnLoaded("SkomsArenaStats") or not LibStub then return nil end
+    local AceAddon = LibStub("AceAddon-3.0", true)
+    return AceAddon and AceAddon:GetAddon("SkomsArenaStats", true)
+end
+
+function ns.OpenArenaStats()
+    local stats = ns.GetArenaStats()
+    if not stats then return end
+    stats:Show()
+    ns.LiftAboveWindow(_G.SkomsArenaStatsFrame)
 end
 
 function ns.ToggleUI()

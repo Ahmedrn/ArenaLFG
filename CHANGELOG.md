@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.4.0 (2026-10-30)
+
+- Players on an older version now get their race and faction icon from a quiet /who (own faction only; can be switched off in the options).
+- New option, off by default: advertise ArenaLFG in Global chat every 5 minutes.
+- Listings from players on an older version now show their spec in your language instead of "None" or a foreign name.
+- Signing up to a listing taken from Global chat opens a whisper already written with your spec, gear score and rating, ending with "(ArenaLFG)".
+- One Skom's minimap button opens all your Skom's addons when two or more are installed (/skoms).
+- New **Arena Stats** button when Skom's Arena Stats is installed.
+
 ## 2.3.1
 
 - The options window now opens in front of ArenaLFG.

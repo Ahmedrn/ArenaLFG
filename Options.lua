@@ -219,6 +219,18 @@ local function BuildMainPanel()
         sliderText:SetFontObject(ns.DB.announce and GameFontNormal or GameFontDisable)
     end
 
+    Check(p, "Advertise ArenaLFG in Global chat every 5 minutes",
+        "Post the ArenaLFG ad (the Share menu's Global message) under your name every 5 minutes. Server chat rules apply.",
+        16, -414,
+        function() return ns.DB.autoShare end,
+        function(v) ns.DB.autoShare = v end)
+
+    Check(p, "Find the race (faction icon) of players on an old version",
+        "Looks the player up with a quiet /who, one name every few seconds. Works for your own faction only.",
+        16, -446,
+        function() return ns.DB.whoLookup end,
+        function(v) ns.DB.whoLookup = v end)
+
     p.refresh = ns.RefreshOptions
     p.default = function() ns.ResetProfile() end
     p:SetScript("OnShow", ns.RefreshOptions)
@@ -426,21 +438,6 @@ function ns.OpenOptions()
     -- the first call on 3.3.5 sometimes only opens the frame without selecting the page
     InterfaceOptionsFrame_OpenToCategory(mainPanel)
     InterfaceOptionsFrame_OpenToCategory(mainPanel)
-    -- our window sits in DIALOG, the game's options in HIGH: lift the options above it until they close
-    local opts = InterfaceOptionsFrame
-    if opts and ns.frame and ns.frame:IsShown() then
-        if not opts.alfgStrata then
-            opts.alfgStrata = opts:GetFrameStrata()
-            opts:HookScript("OnHide", function(self)
-                if self.alfgLifted then
-                    self.alfgLifted = nil
-                    self:SetFrameStrata(self.alfgStrata)
-                end
-            end)
-        end
-        opts.alfgLifted = true
-        opts:SetFrameStrata("DIALOG")
-        opts:SetFrameLevel(ns.frame:GetFrameLevel() + 10)
-        opts:Raise()
-    end
+    -- the game's options sit in HIGH, below our DIALOG window
+    ns.LiftAboveWindow(InterfaceOptionsFrame)
 end
